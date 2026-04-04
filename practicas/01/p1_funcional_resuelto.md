@@ -1,16 +1,14 @@
 # Guía 1: Programación Funcional
 
-## Ejercicio 1
+## Currificación y Tipos
 
-### i.
+### Ejercicio 1
 
-Cuál es el tipo de cada función? (Suponer que todos los números son de tipo Float).  
+#### i. Cuál es el tipo de cada función? (Suponer que todos los números son de tipo Float).  
 
-### ii.
+#### ii. Indicar cuáles de las funciones anteriores no están currificadas. Para cada una de ellas, definir la función currificada correspondiente. Recordar dar el tipo de la función.
 
-Indicar cuáles de las funciones anteriores no están currificadas. Para cada una de ellas, definir la función currificada correspondiente. Recordar dar el tipo de la función.
-
-### Solución
+#### Solución
 
 1. `max2 :: (Float, Float) -> Float`
     - No está currificada, ya que recibe los argumentos empaquetados en tupla.
@@ -66,26 +64,19 @@ Indicar cuáles de las funciones anteriores no están currificadas. Para cada un
     - Está currificada
     - `flipAll = map flip` , y map lo aplica a cada elemento de una lista de funciones.
 
-## Ejercicio 2
+    ---
 
-### i.
+### Ejercicio 2
 
-Definir la función `curry`, que dada una función de dos argumentos, devuelve su equivalente currificada.
-
-
-### ii.
-
-Definir la función `uncurry`, que dada una función currificada de dos argumentos, devuelve su versión no currificada equivalente. Es la inversa de la anterior.
+#### i. Definir la función `curry`, que dada una función de dos argumentos, devuelve su equivalente currificada.
 
 
-### iii.
+#### ii. Definir la función `uncurry`, que dada una función currificada de dos argumentos, devuelve su versión no currificada equivalente. Es la inversa de la anterior.
 
-¿Se podría definir una función `curryN`, que tome una función de un número arbitrario de argumentos y
-devuelva su versión currificada?  
 
-Sugerencia: pensar cuál sería el tipo de la función.
+#### iii. Se podría definir una función `curryN`, que tome una función de un número arbitrario de argumentos y devuelva su versión currificada? (Sugerencia: pensar cuál sería el tipo de la función).
 
-### Solución
+#### Solución
 
 #### i) y ii)
 
@@ -135,3 +126,68 @@ curry4 :: ((a, b, c, d) -> e)   -> a -> b -> c -> d -> e
 Se podría definir `curry3`, `curry4`, etc. por separado, pero una `curryN` arbitrario no es posible.  
 
 No existe en Haskell un tipo como `(tupla de n elementos -> c) -> arg1 -> arg2 -> ... -> argN -> c` para n arbitrario.
+
+---
+
+## Esquemas de Recursión
+
+### Ejercicio 3
+
+> `foldr` recorre una lista y va acumulando un resultado aplicando una función a cada elemento. Su tipo es:
+> ```hs
+> foldr :: (a -> b -> b) -> b -> [a] -> b
+> ```
+> donde:
+> - El primer argumento es la función que combina cada elemento con el acumulador
+> - El segundo es el valor inicial (caso base)
+> - El tercero es la lista
+
+#### i. Redefinir usando `foldr` las funciones `sum`, `elem`, `(++)`, `filter` y `map`.
+
+1. 
+    ```hs
+    sum' :: [Float] -> Float
+    sum' = foldr (+) 0
+    ```
+
+2. 
+    ```hs
+    elem' :: (Eq a) => a -> [a] -> Bool
+    elem' x = foldr (\y acc -> y == x || acc) False
+    
+    -- Por cada elemento y pregunta si es igual a x, el caso base es False.  
+    -- Ejemplo:  
+    
+    -- elem' 3 [1, 2, 3]
+    -- = foldr (\y acc -> y == 3 || acc) False [1, 2, 3]
+    -- = (1 == 3 || (2 == 3 || (3 == 3 || False)))
+    -- = (False   || (False   || (True   || False)))
+    -- = True
+    ```
+
+3.
+    ```hs
+    (+++) :: [a] -> [a] -> [a]
+    (+++) xs ys = foldr (:) ys xs
+
+    -- Ejemplo: 
+    -- [1, 2] +++ [3, 4]
+    -- = foldr (:) [3, 4] [1, 2]
+    -- = (:) 1 ((:) 2 [3, 4])
+    -- = (:) 1 (2 : [3, 4])
+    -- = (:) 1 [2, 3, 4]
+    -- = 1 : [2, 3, 4]
+    -- = [1, 2, 3, 4]
+    ```
+
+4.
+    ```hs
+    filter' :: (a -> Bool) -> [a] -> [a]
+    filter' p = foldr (\x acc -> if p x then x : acc else acc) []
+    ```
+
+5.
+    ```hs
+    map' :: (a -> b) -> [a] -> [b]
+    map' f = foldr (\x acc -> f x : acc) []
+    ```
