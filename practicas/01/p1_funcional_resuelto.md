@@ -79,53 +79,54 @@
 #### Solución
 
 #### i) y ii)
+- 
+    ```hs
+    -- a) ---
 
-```hs
--- a) ---
+    curry' :: ((a, b) -> c) -> a -> b -> c
+    curry' f x y = f (x, y)
 
-curry' :: ((a, b) -> c) -> a -> b -> c
-curry' f x y = f (x, y)
+    -- b) ---
 
--- b) ---
-
-uncurry' :: (a -> b -> c) -> (a, b) -> c
-uncurry' f (x, y) = f x y
-```
+    uncurry' :: (a -> b -> c) -> (a, b) -> c
+    uncurry' f (x, y) = f x y
+    ```
 
 #### Testeado:
-
-```hs
-ghci> maxCurried 3 5
-5
-ghci> maxUncurried (3, 5)
-5
-ghci> curry' maxUncurried 3 5
-5
-ghci> uncurry' maxCurried (3, 5)
-5
-```
+- 
+    ```hs
+    ghci> maxCurried 3 5
+    5
+    ghci> maxUncurried (3, 5)
+    5
+    ghci> curry' maxUncurried 3 5
+    5
+    ghci> uncurry' maxCurried (3, 5)
+    5
+    ```
 
 #### iii)
 
-No se puede definir de forma general en Haskell. El problema está en el tipo: una función de 2 argumentos, 3 argumentos y 4 argumentos tienen tipos completamente distintos:
-```hs
-(a, b) -> c
-(a, b, c) -> d
-(a, b, c, d) -> e
-...
-```
+- 
+    No se puede definir de forma general en Haskell. El problema está en el tipo: una función de 2 argumentos, 3 argumentos y 4 argumentos tienen tipos completamente distintos:
+    ```hs
+    (a, b) -> c
+    (a, b, c) -> d
+    (a, b, c, d) -> e
+    ...
+    ```
 
-No hay forma de escribir un único tipo que capture "tupla de n elementos" para cualquier n, porque en Haskell **las tuplas de distinto tamaño son tipos distintos** y el sistema de tipos es estático, Haskell necesita saber en tiempo de compilación cuantós argumentos tiene la función.
+    No hay forma de escribir un único tipo que capture "tupla de n elementos" para cualquier n, porque en Haskell **las tuplas de distinto tamaño son tipos distintos** y el sistema de tipos es estático, Haskell necesita saber en tiempo de compilación cuantós argumentos tiene la función.
 
-```hs
-curry  :: ((a, b) -> c)         -> a -> b -> c
-curry3 :: ((a, b, c) -> d)      -> a -> b -> c -> d
-curry4 :: ((a, b, c, d) -> e)   -> a -> b -> c -> d -> e
-```
+    ```hs
+    curry  :: ((a, b) -> c)         -> a -> b -> c
+    curry3 :: ((a, b, c) -> d)      -> a -> b -> c -> d
+    curry4 :: ((a, b, c, d) -> e)   -> a -> b -> c -> d -> e
+    ```
 
-Se podría definir `curry3`, `curry4`, etc. por separado, pero una `curryN` arbitrario no es posible.  
+    Se podría definir `curry3`, `curry4`, etc. por separado, pero una `curryN` arbitrario no es posible.  
 
-No existe en Haskell un tipo como `(tupla de n elementos -> c) -> arg1 -> arg2 -> ... -> argN -> c` para n arbitrario.
+    No existe en Haskell un tipo como `(tupla de n elementos -> c) -> arg1 -> arg2 -> ... -> argN -> c` para n arbitrario.
 
 ---
 
@@ -191,3 +192,46 @@ No existe en Haskell un tipo como `(tupla de n elementos -> c) -> arg1 -> arg2 -
     map' :: (a -> b) -> [a] -> [b]
     map' f = foldr (\x acc -> f x : acc) []
     ```
+
+#### ii. Definir la función `mejorSegún :: (a -> a -> Bool) -> [a] -> a`, que devuelve el máximo elemento de la lista según una función de comparación, utilizando `foldr1`. Por ejemplo, `maximum = mejorSegún (>)`.
+
+- 
+    > `foldr1` es igual a `foldr` pero no necesita caso base, usa el último elemento de la lista como valor inicial. Su tipo es:
+    > ```hs
+    > foldr1 :: (a -> a -> a) -> [a] -> a
+    > ```
+
+    ```hs
+    mejorSegun :: (a -> a -> Bool) -> [a] -> a
+    mejorSegun f xs = foldr1 (\x acc -> if f x acc then x else acc) xs
+
+    -- Ejemplo
+    -- mejorSegun (>) [1, 3, 2]
+    -- = foldr1 (\x acc -> if x > acc then x else acc) [1, 3, 2]
+    -- y esto lo resuelve como
+    -- f 1 (f 3 2) = f 1 3 = 3
+    -- donde f es la lambda
+
+    -- primero le pasa 3 y 2 (x = 3, acc = 2)
+    -- = (\x acc -> if x > acc then x else acc) 3 2
+    -- = if 3 > 2 then 3 else 2
+    -- = 3
+
+    -- luego le pasa 1 y el resultado anterior (x = 1, acc = 3)
+    -- = (\x acc -> if x > acc then x else acc) 1 3
+    -- = if 1 > 3 then 1 else 3
+    -- = 3
+    ```
+
+#### iii. Definir la función `sumasParciales :: Num a => [a] -> [a]`, que dada una lista de números devuelve otra de la misma longitud, que tiene en cada posición la suma parcial de los elementos de la lista original desde la cabeza hasta la posición actual. Por ejemplo, `sumasParciales [1,4,-1,0,5] = [1,5,4,4,9]`.
+
+-
+    ```hs
+    sumasParciales :: Num a => [a] -> [a]
+    sumasParciales xs = tail (foldl (\acc x -> acc ++ [x + (last acc)]) [0] xs)
+
+    sumasParciales' :: Num a => [a] -> [a]
+    sumasParciales' xs = tail (scanl (+) 0 xs)
+    ```
+
+#### iv. iv. Definir la función `sumaAlt`, que realiza la suma alternada de los elementos de una lista. Es decir, da como resultado: el primer elemento, menos el segundo, más el tercero, menos el cuarto, etc. Usar `foldr`.
