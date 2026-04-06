@@ -234,4 +234,32 @@
     sumasParciales' xs = tail (scanl (+) 0 xs)
     ```
 
-#### iv. iv. Definir la función `sumaAlt`, que realiza la suma alternada de los elementos de una lista. Es decir, da como resultado: el primer elemento, menos el segundo, más el tercero, menos el cuarto, etc. Usar `foldr`.
+#### iv. Definir la función `sumaAlt`, que realiza la suma alternada de los elementos de una lista. Es decir, da como resultado: el primer elemento, menos el segundo, más el tercero, menos el cuarto, etc. Usar `foldr`.
+
+- 
+    ```hs
+    -- El truco está en ver que:
+    --
+    -- Dado [2 1 3 4],
+    -- 2 - 1 + 3 - 4 = 
+    -- = 2 - 1 + 3 - 4
+    -- = 2 - (1 - 3 + 4)
+    -- = 2 - (1 - (3 - 4))
+
+    sumaAlt :: [Int] -> Int
+    sumaAlt xs = foldr1 (-) xs
+    ```
+
+#### v. Hacer lo mismo que en el punto anterior, pero en sentido inverso (el último elemento menos el anteúltimo, etc.). Pensar qué esquema de recursión conviene usar en este caso.
+
+- 
+    ```hs
+    -- Dado [1 2 3 4],
+    -- (4 - 3 + 2 - 1) = 
+    -- = 4 - (3 - 2 + 1)
+    -- = 4 - (3 - (2 - 1))
+
+    sumaAltInversa :: [Int] -> Int
+    sumaAltInversa xs = foldl1 (flip (-)) xs
+    -- con flip (-) hace x-acc en vez de acc-x
+    ```

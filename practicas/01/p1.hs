@@ -76,3 +76,28 @@ sumasParciales xs = tail (foldl (\acc x -> acc ++ [x + (last acc)]) [0] xs)
 
 sumasParciales' :: Num a => [a] -> [a]
 sumasParciales' xs = tail (scanl (+) 0 xs)
+
+-- iv) ---
+
+-- El truco está en ver que:
+--
+-- Dado [2 1 3 4],
+-- 2 - 1 + 3 - 4 = 
+-- = 2 - 1 + 3 - 4
+-- = 2 - (1 - 3 + 4)
+-- = 2 - (1 - (3 - 4))
+
+sumaAlt :: [Int] -> Int
+sumaAlt xs = foldr1 (-) xs
+
+-- v) ---
+
+-- Dado [1 2 3 4],
+-- (4 - 3 + 2 - 1) = 
+-- = 4 - (3 - 2 + 1)
+-- = 4 - (3 - (2 - 1))
+
+sumaAltInversa :: [Int] -> Int
+sumaAltInversa xs = foldl1 (flip (-)) xs
+-- con flip (-) hace x-acc en vez de acc-x
+
