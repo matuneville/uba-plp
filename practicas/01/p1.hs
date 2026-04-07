@@ -101,3 +101,40 @@ sumaAltInversa :: [Int] -> Int
 sumaAltInversa xs = foldl1 (flip (-)) xs
 -- con flip (-) hace x-acc en vez de acc-x
 
+-- Ejercicio 5 -------------------------
+----------------------------------------
+
+-- entrelazar [1,2,3] [4,5,6] = [1,4,2,5,3,6]
+
+-- foldr f z [1,2,3] = f 1 (f 2 (f 3 z))
+
+entrelazar :: [a] -> [a] -> [a]
+entrelazar xs ys = foldr
+    (\x acc ys ->
+        if null ys then x : acc []
+        else x : head ys : acc (tail ys)
+    ) id xs ys
+
+-- entrelazar [1,2,3] [4,5,6]
+-- = foldr (\x acc ys -> ...) id [1,2,3] [4,5,6]
+-- = (\x acc ys -> ...) 1 ((\x acc ys -> ...) 2 ((\x acc ys -> ...) 3 id)) [4,5,6]
+
+-- paso 1: x=3, acc=id
+-- f3 = \ys -> if null ys then 3 : id []
+--             else 3 : head ys : id (tail ys)
+
+-- paso 2: x=2, acc=f3
+-- f2 = \ys -> if null ys then 2 : f3 []
+--             else 2 : head ys : f3 (tail ys)
+
+-- paso 3: x=1, acc=f2
+-- f1 = \ys -> if null ys then 1 : f2 []
+--             else 1 : head ys : f2 (tail ys)
+
+-- ahora aplicando f1 a [4,5,6]
+-- f1 [4,5,6]
+-- = 1 : 4 : f2 [5,6]
+-- = 1 : 4 : 2 : 5 : f3 [6]
+-- = 1 : 4 : 2 : 5 : 3 : 6 : id []
+-- = 1 : 4 : 2 : 5 : 3 : 6 : []
+-- = [1,4,2,5,3,6]

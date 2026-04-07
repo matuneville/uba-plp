@@ -2,6 +2,35 @@
 
 ## Currificación y Tipos
 
+> ### Tipos
+> Un tipo es una especificación del invariante de un dato o de una función.
+> **Ejemplo:**
+> - `99 :: Int`
+> - `not :: Bool -> Bool`
+> - `not True :: Bool`
+> - `(+) :: Int -> (Int -> Int)`
+> - `(+) 1 :: Int -> Int`
+> - `((+) 1) 2 :: Int`
+> - `f :: a -> a`  
+> El tipo de una función expresa un contrato.
+
+
+> ### Currificación
+> La currificación es la idea de que una función de varios argumentos se representa como una secuencia de funciones de un solo argumento.
+>
+> #### Función currificada
+> - `suma :: Int -> Int -> Int`
+> - `suma x y = x + y`
+>
+> `suma 1` devuelve una función: `suma 1 :: Int -> Int`
+>
+> #### Función no currificada (usa tupla)
+> - `suma' :: (Int, Int) -> Int`
+> - `suma' (x, y) = x + y`
+>
+> Acá no podés hacer aplicación parcial directamente (`suma' 1` no tiene sentido).
+
+
 ### Ejercicio 1
 
 #### i. Cuál es el tipo de cada función? (Suponer que todos los números son de tipo Float).  
@@ -262,4 +291,71 @@
     sumaAltInversa :: [Int] -> Int
     sumaAltInversa xs = foldl1 (flip (-)) xs
     -- con flip (-) hace x-acc en vez de acc-x
+    ```
+
+    ---
+
+> ### Tipos de recursión
+>
+> #### 1. Recursión estructural
+> Siempre se hace recursión sobre una **parte estrictamente más pequeña** de la original. En listas, cada llamado recursivo usa la **cola** (`xs`) de la lista original, **sin modificarla**.
+>
+> ```haskell
+> -- estructural: siempre se llama con xs, la cola de (x:xs)
+> f [] = ...
+> f (x:xs) = ... f xs ...
+> ```
+>
+> #### 2. Recursión primitiva
+> Caso especial de estructural donde además de la cola `xs`, se tiene acceso al **resultado de la llamada recursiva**. Es la que modela `foldr`.
+>
+> ```haskell
+> -- primitiva: usa xs y también el resultado recursivo
+> f [] = ...
+> f (x:xs) = ... x ... (f xs) ...
+> ```
+>
+> #### 3. Recursión global (general)
+> No hay restricción sobre el argumento de la llamada recursiva. Si la estructura original es **modificada** antes de pasarla (por ejemplo con `tail xs`), entonces no cumple recursión estructural y es global.
+>
+> ```haskell
+> -- global: se llama con tail xs, que modifica la estructura original
+> f (x:xs) = ... f (tail xs) ...
+> ```
+
+
+### Ejercicio 5
+
+Indicar si la recursión utilizada en cada una de ellas es o no estructural. Si lo es, reescribirla utilizando `foldr`. En caso contrario, explicar el motivo.
+
+```hs
+elementosEnPosicionesPares :: [a] -> [a]
+elementosEnPosicionesPares [] = []
+elementosEnPosicionesPares (x:xs) =
+    if null xs
+    then [x]
+    else x : elementosEnPosicionesPares (tail xs)
+```
+
+1. No es recursión estructural ya que al hacer ell lamado recursivo utiliza `tail xs`, descartando elementos de la cola entera, `xs`.
+
+```hs
+entrelazar :: [a] -> [a] -> [a]
+entrelazar [] = id
+entrelazar (x:xs) =
+    \ys -> if null ys
+           then x : entrelazar xs []
+           else x : head ys : entrelazar xs (tail ys)
+```
+
+2. Sí es recursión estructural, ya que hace recursión sobre la cola `xs`. Si bien usa `tail ys`, eso no rompe la recursión estructural ya que `ys` no es el argumento estructural de la recursión, si no que es sólo un parámetro que no define casos base ni guía la recursión.
+Hecha con `foldr`:
+- 
+    ```hs
+    entrelazar :: [a] -> [a] -> [a]
+    entrelazar xs ys = foldr
+        (\x acc ys ->
+            if null ys then x : acc []
+            else x : head ys : acc (tail ys)
+        ) id xs ys
     ```
