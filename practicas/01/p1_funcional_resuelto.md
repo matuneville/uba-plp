@@ -443,6 +443,51 @@ recr f z (x : xs) = f x xs (recr f z xs)
 
 ### Ejercicio 7
 
-Definir las siguientes funciones para trabajar sobre listas, y dar su tipo. Todas ellas deben poder aplicarse a listas finitas e infinitas.
+#### Definir las siguientes funciones para trabajar sobre listas, y dar su tipo. Todas ellas deben poder aplicarse a listas finitas e infinitas.
 
-i. `mapPares`, una versión de `map` que toma una función currificada de dos argumentos y una lista de pares de valores, y devuelve la lista de aplicaciones de la función a cada par. Pista: recordar `curry` y `uncurry`.
+#### i. `mapPares`, una versión de `map` que toma una función currificada de dos argumentos y una lista de pares de valores, y devuelve la lista de aplicaciones de la función a cada par. Pista: recordar `curry` y `uncurry`.
+
+-
+    ```hs
+    mapPares :: (a -> b -> c) -> [(a,b)] -> [c]
+    mapPares _ []     = []
+    mapPares f (p:ps) = uncurry f p : mapPares f ps
+
+    mapPares' :: (a -> b -> c) -> [(a,b)] -> [c]
+    mapPares' f ps = map (uncurry f) ps
+    ```
+    - Funciona bien en listas infinitas:
+        ```hs
+        ghci> take 5 (mapPares (*) (zip [1..] [5..]))
+        [5,12,21,32,45]
+        ```
+
+#### ii. `armarPares`, que dadas dos listas arma una lista de pares que contiene, en cada posición, el elemento correspondiente a esa posición en cada una de las listas. Si una de las listas es más larga que la otra, ignorar los elementos que sobran (el resultado tendrá la longitud de la lista más corta). Esta función en Haskell se llama `zip`. Pista: aprovechar la currificación y utilizar evaluación parcial.
+
+
+-
+    ```hs
+    armarPares :: [a] -> [b] -> [(a,b)]
+    armarPares _ []          = []
+    armarPares [] _          = []
+    armarPares (x:xs) (y:ys) = (x,y) : armarPares xs ys
+
+    armarPares' :: [a] -> [b] -> [(a,b)]
+    armarPares' = zip
+    ```
+
+    - Funciona bien en listas infinitas:
+        ```hs
+        ghci> take 5 (armarPares [1..] [5..])
+        [(1,5),(2,6),(3,7),(4,8),(5,9)]
+        ```
+
+#### iii. `mapDoble`, una variante de `mapPares`, que toma una función currificada de dos argumentos y dos listas (de igual longitud), y devuelve una lista de aplicaciones de la función a cada elemento correspondiente de las dos listas. Esta función en Haskell se llama `zipWith`.
+
+- 
+    ```hs
+    mapDoble :: (a -> b -> c) -> [a] -> [b] -> [c]
+    mapDoble _ [] _          = []
+    mapDoble _ _ []          = []
+    mapDoble f (x:xs) (y:ys) = f x y : mapDoble f xs ys
+    ```

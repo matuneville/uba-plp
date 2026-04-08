@@ -230,3 +230,29 @@ insertarOrdenado' a ys = recr insertar z ys
         insertar x xs acc
             | a < x = a:x:xs
             | otherwise = x:acc
+
+-- Ejercicio 7 -------------------------
+----------------------------------------
+
+-- i) ----
+mapPares :: (a -> b -> c) -> [(a,b)] -> [c]
+mapPares _ []     = []
+mapPares f (p:ps) = uncurry f p : mapPares f ps
+
+mapPares' :: (a -> b -> c) -> [(a,b)] -> [c]
+mapPares' f ps = map (uncurry f) ps
+
+-- ii) ----
+armarPares :: [a] -> [b] -> [(a,b)]
+armarPares _ []          = []
+armarPares [] _          = []
+armarPares (x:xs) (y:ys) = (x,y) : armarPares xs ys
+
+armarPares' :: [a] -> [b] -> [(a,b)]
+armarPares' = zip
+
+-- iii) ----
+mapDoble :: (a -> b -> c) -> [a] -> [b] -> [c]
+mapDoble _ [] _          = []
+mapDoble _ _ []          = []
+mapDoble f (x:xs) (y:ys) = f x y : mapDoble f xs ys
