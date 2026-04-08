@@ -427,3 +427,22 @@ recr f z (x : xs) = f x xs (recr f z xs)
     - `recr f z (x : xs) = f x xs (recr f z xs)`: en cada paso, `f` recibe también `xs`
 
 #### c. Definir la función `insertarOrdenado :: Ord a => a -> [a] -> [a]` que inserta un elemento en una lista ordenada (de manera creciente), de manera que se preserva el ordenamiento.
+
+- 
+    ```hs
+    insertarOrdenado' :: Ord a => a -> [a] -> [a]
+    insertarOrdenado' a ys = recr insertar z ys
+        where
+            z = [a]
+            insertar x xs acc
+                | a < x = a:x:xs
+                | otherwise = x:acc
+    ```
+
+    ---
+
+### Ejercicio 7
+
+Definir las siguientes funciones para trabajar sobre listas, y dar su tipo. Todas ellas deben poder aplicarse a listas finitas e infinitas.
+
+i. `mapPares`, una versión de `map` que toma una función currificada de dos argumentos y una lista de pares de valores, y devuelve la lista de aplicaciones de la función a cada par. Pista: recordar `curry` y `uncurry`.
