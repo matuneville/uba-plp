@@ -188,14 +188,6 @@ insertarOrdenado a (x:xs)
 -- recr _ z [] = z
 -- recr f z (x : xs) = f x xs (recr f z xs)
 
-insertarOrdenado' :: Ord a => a -> [a] -> [a]
-insertarOrdenado' a ys = recr f z ys
-    where
-        z = [a]
-        f x xs acc
-            | a < x = a:x:xs
-            | otherwise = x:acc
-
 -- insertarOrdenado 2 [0,1,4,5] = recr f z [0,1,4,5]
 -- = f 0 [1,4,5] (recr f z [1,4,5])
 -- = f 0 [1,4,5] (f 1 [4,5] (recr f z [4,5]))
@@ -225,7 +217,16 @@ insertarOrdenado' a ys = recr f z ys
 -- = f 0 [2,4,5] [1,2,4,5]
 -- 1 /< x=0 -> uso rec=[1,2,4,5] y no xs -> 0:rec = 0:[1,2,4,5] = [0,1,2,4,5]
 
--- entonces f lo que hace es
+-- entonces f lo que hace es 
 -- si a < x -> devuelvo a:x:xs
 -- si no -> devuelvo x:rec
 -- el caso base z sería [a], se ve a ojo
+-- luego llamo 'insertar' a f, queda un poco mejor
+
+insertarOrdenado' :: Ord a => a -> [a] -> [a]
+insertarOrdenado' a ys = recr insertar z ys
+    where
+        z = [a]
+        insertar x xs acc
+            | a < x = a:x:xs
+            | otherwise = x:acc
