@@ -326,7 +326,7 @@
 
 ### Ejercicio 5
 
-Indicar si la recursión utilizada en cada una de ellas es o no estructural. Si lo es, reescribirla utilizando `foldr`. En caso contrario, explicar el motivo.
+#### Indicar si la recursión utilizada en cada una de ellas es o no estructural. Si lo es, reescribirla utilizando `foldr`. En caso contrario, explicar el motivo.
 
 ```hs
 elementosEnPosicionesPares :: [a] -> [a]
@@ -359,3 +359,71 @@ Hecha con `foldr`:
             else x : head ys : acc (tail ys)
         ) id xs ys
     ```
+
+    ---
+
+### Ejercicio 6
+
+#### El siguiente esquema captura la recursión primitiva sobre listas.
+
+```hs
+recr :: (a -> [a] -> b -> b) -> b -> [a] -> b
+recr _ z [] = z
+recr f z (x : xs) = f x xs (recr f z xs)
+```
+
+#### a. Definir la función `sacarUna :: Eq a => a -> [a] -> [a]`, que dados un elemento y una lista devuelve el resultado de eliminar de la lista la primera aparición del elemento (si está presente).
+
+- Recursivo normal:
+    ```hs
+    sacarUna :: Eq a => a -> [a] -> [a]
+    sacarUna _ [] = []
+    sacarUna a (x:xs)
+        | a == x = xs
+        | otherwise = x : sacarUna a xs
+    ```
+- Usando `recr`:
+    ```hs
+    -- quiero resolverlo con recr
+    -- sacarUna 3 [1,3,2,3] = recr f z [1,3,2,3]
+    -- = f 1 [3,2,3] (recr f z [3,2,3])
+    -- = f 1 [3,2,3] (f 3 [2,3] (recr f z [2,3]))
+    -- = f 1 [3,2,3] (f 3 [2,3] (f 2 [3] (recr f z [3])))
+    -- = f 1 [3,2,3] (f 3 [2,3] (f 2 [3] (f 3 [] (recr f z [] ))))
+    -- = f 1 [3,2,3] (f 3 [2,3] (f 2 [3] (f 3 [] z)))
+    -- x=3, lo quiero descartar, devuelvo solo xs=[]
+    -- = f 1 [3,2,3] (f 3 [2,3] (f 2 [3] [] ))
+    -- x=2, no lo quiero descartar, reconstruyo rec=[2]
+    -- = f 1 [3,2,3] (f 3 [2,3] [2] )
+    -- de nuevo, x=3, lo quiero descartar, devuelvo directamete xs=[2,3]
+    -- = f 1 [3,2,3] [2,3]
+    -- x=1, no lo quiero descartar, reconstruyo rec=[1,2,3]
+    -- [1,2,3]
+
+    -- entonces f hace lo siguiente...
+    -- dado f x xs rec
+    --      si x == 3 -> lo quiero borrar -> devuelvo xs (no uso el rec acumulado)
+    --      si x != 3 -> no lo quiero borrar -> reconstruyo con x : rec
+
+    sacarUna' :: Eq a => a -> [a] -> [a]
+    sacarUna' a xs = recr f z xs
+        where
+            z = []
+            f x xs rec
+                | x == a = xs
+                | otherwise = x : rec
+    ```
+
+#### b. Explicar por qué el esquema de recursión estructural (foldr) no es adecuado para implementar la función sacarUna del punto anterior.
+
+- El esquema de recursión `foldr` no es adecuado para implementar `sacarUna` porque la función que recibe solo tiene acceso al elemento actual y al resultado de la recursión sobre la cola, pero no a la cola original.
+
+- En `sacarUna`, cuando se encuentra el elemento a eliminar, es necesario devolver la cola original sin procesar. Esto no puede hacerse con `foldr`, ya que la cola ya fue procesada en el resultado recursivo.
+
+    - `foldr f z (x:xs) = f x (foldr f z xs)`: en cada paso, `f`recibe `x` y `acc`(resultado de procesar `xs`) pero no recibe `xs`.
+
+- En cambio, el esquema `recr` sí permite acceder a la cola original (xs), lo que hace posible implementar correctamente la función.
+
+    - `recr f z (x : xs) = f x xs (recr f z xs)`: en cada paso, `f` recibe también `xs`
+
+#### c. Definir la función `insertarOrdenado :: Ord a => a -> [a] -> [a]` que inserta un elemento en una lista ordenada (de manera creciente), de manera que se preserva el ordenamiento.

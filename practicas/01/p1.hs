@@ -85,7 +85,8 @@ sumasParciales' xs = tail (scanl (+) 0 xs)
 -- 2 - 1 + 3 - 4 = 
 -- = 2 - 1 + 3 - 4
 -- = 2 - (1 - 3 + 4)
--- = 2 - (1 - (3 - 4))
+-- = 2 - (1 - (3 - 4)) = f 2 (f 1 (f 3 4)) = foldr1 f [2 1 3 4],
+-- donde f = (-)
 
 sumaAlt :: [Int] -> Int
 sumaAlt xs = foldr1 (-) xs
@@ -115,26 +116,116 @@ entrelazar xs ys = foldr
         else x : head ys : acc (tail ys)
     ) id xs ys
 
--- entrelazar [1,2,3] [4,5,6]
--- = foldr (\x acc ys -> ...) id [1,2,3] [4,5,6]
--- = (\x acc ys -> ...) 1 ((\x acc ys -> ...) 2 ((\x acc ys -> ...) 3 id)) [4,5,6]
+-- entrelazar [1,2] [4,5]
+-- = foldr f z [1,2] [4,5]
+-- pero foldr :: (a -> b -> b) -> b -> [a] -> b, por lo tanto [4,5] sobra
+-- -> la idea seria hacer foldr sobre la primera lista, y que la segunda viaje dentro de z y f
+-- = foldr f z [1,2]
+-- = f 1 (f 2 z)
+-- en cada paso tengo que intercalar un elemento de [3,4]
+-- pero foldr no me da acceso a ella, por lo que la puedo esconder en acumulador o en funciones
+--
+-- sé que 'foldr f z []' es el caso base,
+-- y sé que 'entrelazar [] ys = ys' también caso base,
+-- parece que z = ys
+-- pero necesito información extra que no viene en foldr,
+-- no puedo “guardarla” en una lista... pero sí en una función
+-- z = \ys -> ys
+-- = (f 1 (f 2 z)) 
 
--- paso 1: x=3, acc=id
--- f3 = \ys -> if null ys then 3 : id []
---             else 3 : head ys : id (tail ys)
 
--- paso 2: x=2, acc=f3
--- f2 = \ys -> if null ys then 2 : f3 []
---             else 2 : head ys : f3 (tail ys)
 
--- paso 3: x=1, acc=f2
--- f1 = \ys -> if null ys then 1 : f2 []
---             else 1 : head ys : f2 (tail ys)
+-- Ejercicio 6 -------------------------
+----------------------------------------
 
--- ahora aplicando f1 a [4,5,6]
--- f1 [4,5,6]
--- = 1 : 4 : f2 [5,6]
--- = 1 : 4 : 2 : 5 : f3 [6]
--- = 1 : 4 : 2 : 5 : 3 : 6 : id []
--- = 1 : 4 : 2 : 5 : 3 : 6 : []
--- = [1,4,2,5,3,6]
+recr :: (a -> [a] -> b -> b) -> b -> [a] -> b
+recr _ z [] = z
+recr f z (x : xs) = f x xs (recr f z xs)
+
+sacarUna :: Eq a => a -> [a] -> [a]
+sacarUna _ [] = []
+sacarUna a (x:xs)
+    | a == x = xs
+    | otherwise = x : sacarUna a xs
+
+-- quiero resolverlo con recr
+-- sacarUna 3 [1,3,2,3] = recr f z [1,3,2,3]
+-- = f 1 [3,2,3] (recr f z [3,2,3])
+-- = f 1 [3,2,3] (f 3 [2,3] (recr f z [2,3]))
+-- = f 1 [3,2,3] (f 3 [2,3] (f 2 [3] (recr f z [3])))
+-- = f 1 [3,2,3] (f 3 [2,3] (f 2 [3] (f 3 [] (recr f z [] ))))
+-- = f 1 [3,2,3] (f 3 [2,3] (f 2 [3] (f 3 [] z)))
+-- x=3, lo quiero descartar, devuelvo solo xs=[]
+-- = f 1 [3,2,3] (f 3 [2,3] (f 2 [3] [] ))
+-- x=2, no lo quiero descartar, reconstruyo rec=[2]
+-- = f 1 [3,2,3] (f 3 [2,3] [2] )
+-- de nuevo, x=3, lo quiero descartar, devuelvo directamete xs=[2,3]
+-- = f 1 [3,2,3] [2,3]
+-- x=1, no lo quiero descartar, reconstruyo rec=[1,2,3]
+-- [1,2,3]
+
+-- entonces f hace lo siguiente...
+-- dado f x xs rec
+--      si x == 3 -> lo quiero borrar -> devuelvo xs (no uso el rec acumulado)
+--      si x != 3 -> no lo quiero borrar -> reconstruyo con x : rec
+
+sacarUna' :: Eq a => a -> [a] -> [a]
+sacarUna' a xs = recr f z xs
+    where
+        z = []
+        f x xs rec
+            | x == a = xs
+            | otherwise = x : rec
+
+-- c) ---
+
+insertarOrdenado :: Ord a => a -> [a] -> [a]
+insertarOrdenado a [] = [a]
+insertarOrdenado a (x:xs)
+    | a < x = a : (x:xs)
+    | otherwise = x : insertarOrdenado a xs
+
+-- recr _ z [] = z
+-- recr f z (x : xs) = f x xs (recr f z xs)
+
+insertarOrdenado' :: Ord a => a -> [a] -> [a]
+insertarOrdenado' a ys = recr f z ys
+    where
+        z = [a]
+        f x xs acc
+            | a < x = a:x:xs
+            | otherwise = x:acc
+
+-- insertarOrdenado 2 [0,1,4,5] = recr f z [0,1,4,5]
+-- = f 0 [1,4,5] (recr f z [1,4,5])
+-- = f 0 [1,4,5] (f 1 [4,5] (recr f z [4,5]))
+-- = f 0 [1,4,5] (f 1 [4,5] (f 4 [5] (recr f z [5])))
+-- = f 0 [1,4,5] (f 1 [4,5] (f 4 [5] (f 5 [] (recr f z []))))
+-- = f 0 [1,4,5] (f 1 [4,5] (f 4 [5] (f 5 [] z )))
+-- 2 < x=5 -> uso xs=[] y no rec=z -> 2:5:xs = 2:5:[] = [2,5] = rec resultado
+-- = f 0 [1,4,5] (f 1 [4,5] (f 4 [5] [2,5]))
+-- 2 < x=4 -> uso xs=[5] y no rec=[2,5] -> 2:4:xs = 2:4:[5] = [2,4,5] = rec resultado
+-- = f 0 [1,4,5] (f 1 [4,5] [2,4,5])
+-- 2 /< x=1 -> uso rec=[2,4,5] y no xs=[4,5] -> 1:rec = 1:[2,4,5] = [1,2,4,5] = rec rto
+-- = f 0 [1,4,5] [1,2,4,5])
+-- 2 /< x=0 -> uso rec=[1,2,4,5] y no xs=[1,4,5] -> 0:rec = 0:[1,2,4,5] = [0,1,2,4,5] = rec rto
+-- resultado -> rec = [0,1,2,4,5]
+
+-- insertarOrdenado 1 [0,2,4,5] = recr f z [0,2,4,5]
+-- = f 0 [2,4,5] (recr f z [2,4,5])
+-- = f 0 [2,4,5] (f 2 [4,5] (recr f z [4,5]))
+-- = f 0 [2,4,5] (f 2 [4,5] (f 4 [5] (recr f z [5])))
+-- = f 0 [2,4,5] (f 2 [4,5] (f 4 [5] (f 5 [] (recr f z []))))
+-- = f 0 [2,4,5] (f 2 [4,5] (f 4 [5] (f 5 [] z)))
+-- 1 < x=5 -> uso xs=[] y no rec=z -> 1:5:xs = 1:5:[] = [1,5] = rec resultado
+-- = f 0 [2,4,5] (f 2 [4,5] (f 4 [5] [1,5]))
+-- 1 < x=4 -> uso xs=[5] y no rec=[1,5] -> 1:4:xs = 1:4:[5] = [1,4,5] = rec resultado
+-- = f 0 [2,4,5] (f 2 [4,5] [1,4,5])
+-- 1 < x=2 -> uso xs=[4,5] y no rec=[1,4,5] -> 1:2:xs = 1:2:[4,5] = [1,2,4,5] = rec rto
+-- = f 0 [2,4,5] [1,2,4,5]
+-- 1 /< x=0 -> uso rec=[1,2,4,5] y no xs -> 0:rec = 0:[1,2,4,5] = [0,1,2,4,5]
+
+-- entonces f lo que hace es
+-- si a < x -> devuelvo a:x:xs
+-- si no -> devuelvo x:rec
+-- el caso base z sería [a], se ve a ojo
