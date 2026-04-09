@@ -256,3 +256,35 @@ mapDoble :: (a -> b -> c) -> [a] -> [b] -> [c]
 mapDoble _ [] _          = []
 mapDoble _ _ []          = []
 mapDoble f (x:xs) (y:ys) = f x y : mapDoble f xs ys
+
+
+-- Ejercicio 7 -------------------------
+----------------------------------------
+-- para listas tengo foldr:
+-- foldr :: (a -> b -> b) -> b -> [a] -> b
+-- foldr f z []     = z
+-- foldr f z (x:xs) = f x (foldr f z xs)
+
+-- y en foldr
+--      - si la lista es [], devuelvo z (caso base)
+--      - aplico f con x y uso xs en el paso recursivo
+
+-- quiero lo mismo para los naturales, donde:
+--      - si el numero es 0, devuelvo z (caso base)
+--      - aplico f con n y uso n-1 en el paso recursivo
+
+-- i) ----
+
+foldNat :: (Int -> b -> b) -> b -> Int -> b
+foldNat _ z 0 = z
+foldNat f z n = f n (foldNat f z (n-1))
+
+-- ii) ----
+
+potencia :: Int -> Int -> Int
+potencia a 0 = 1
+potencia a b = a *  (potencia a (b-1))
+
+potencia' :: Int -> Int -> Int
+potencia' a b = foldNat (\x acc -> a * acc) 1 b
+

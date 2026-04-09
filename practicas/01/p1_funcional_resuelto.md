@@ -158,6 +158,7 @@
     No existe en Haskell un tipo como `(tupla de n elementos -> c) -> arg1 -> arg2 -> ... -> argN -> c` para n arbitrario.
 
 ---
+---
 
 ## Esquemas de Recursión
 
@@ -491,3 +492,22 @@ recr f z (x : xs) = f x xs (recr f z xs)
     mapDoble _ _ []          = []
     mapDoble f (x:xs) (y:ys) = f x y : mapDoble f xs ys
     ```
+
+---
+---
+
+## Otras estructuras de datos
+> En esta sección se permite (y se espera) el uso de recursión explícita únicamente para la definición de esquemas de recursión.
+
+### Ejercicio 9
+
+#### i. Definir y dar el tipo del esquema de recursión `foldNat` sobre los naturales. Utilizar el tipo `Integer` de Haskell (la función va a estar definida sólo para los enteros mayores o iguales que 0).
+
+-
+    ```hs
+    foldNat :: (Int -> b -> b) -> b -> Int -> b
+    foldNat _ z 0 = z
+    foldNat f z n = f n (foldNat f z (n-1))
+    ```
+
+##### ii. Utilizando `foldNat`, definir la función potencia.
