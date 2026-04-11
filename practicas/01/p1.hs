@@ -248,6 +248,55 @@ armarPares _ []          = []
 armarPares [] _          = []
 armarPares (x:xs) (y:ys) = (x,y) : armarPares xs ys
 
+-- armarPares [1,2,3] [4,5,6] =
+-- = (foldr f funciónVacía [1,2,3]) [4,5,6]
+-- = (f 1 (f 2(f 3 funciónVacia))) [4,5,6]
+-- f lo que hace es:
+--      si ys es null -> devuelve vacía
+--      si no -> pongo (xs , cabeza de ys)
+--
+-- f 1 acc [4,5,6]
+-- donde: x = 1
+--        acc = f 2 (f 3 funcionVacia)
+--        ys = [4,5,6]
+-- = if null [4,5,6] then []
+--   else (1,4) : acc (tail [4,5,6])
+-- = (1,4) : f 2 (f 3 funcionVacia) [5,6]
+--
+-- f 2 acc [5,6]
+-- donde: x = 2
+--        acc = f 3 funcionVacia
+--        ys = [5,6]
+-- = if null [5,6] then []
+--   else (2,5) : acc (tail [5,6])
+-- = (2,5) : f 3 funcionVacia [6]
+--
+-- f 3 acc [6]
+-- donde: x = 3
+--        acc = funcionVacia
+--        ys = [6]
+-- = if null [6] then []
+--   else (3,6) : acc (tail [6])
+-- = (3,6) : funcionVacia []
+-- = (3,6) : [] = [(3,6)]
+--
+-- f 2 acc [5,6] = (2,5) : [(3,6)]
+-- = [(2,5), (3,6)]
+--
+-- f 1 acc [4,5,6] = (1,4) : [(2,5), (3,6)]
+-- = [(1,4), (2,5), (3,6)]
+
+
+armarPares2 :: [a] -> [b] -> [(a, b)]
+armarPares2 = foldr (
+    \x acc ys ->
+        if null ys
+            then []
+        else
+            (x, head ys) : acc (tail ys)
+    ) (const [])
+
+
 armarPares' :: [a] -> [b] -> [(a,b)]
 armarPares' = zip
 

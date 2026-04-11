@@ -473,8 +473,14 @@ recr f z (x : xs) = f x xs (recr f z xs)
     armarPares [] _          = []
     armarPares (x:xs) (y:ys) = (x,y) : armarPares xs ys
 
-    armarPares' :: [a] -> [b] -> [(a,b)]
-    armarPares' = zip
+    armarPares2 :: [a] -> [b] -> [(a, b)]
+    armarPares2 = foldr (
+        \x acc ys ->
+            if null ys
+                then []
+            else
+                (x, head ys) : acc (tail ys)
+        ) (const [])
     ```
 
     - Funciona bien en listas infinitas:
