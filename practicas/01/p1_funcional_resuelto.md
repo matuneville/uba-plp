@@ -516,4 +516,64 @@ recr f z (x : xs) = f x xs (recr f z xs)
     foldNat f z n = f n (foldNat f z (n-1))
     ```
 
-##### ii. Utilizando `foldNat`, definir la función potencia.
+##### ii. Utilizando `foldNat`, definir la función `potencia`.
+
+- 
+    ```hs
+    potencia' :: Int -> Int -> Int
+    potencia' a b = foldNat (\x acc -> a * acc) 1 b
+    ```
+
+    ---
+
+### Ejercicio 12  
+
+Considerar el siguiente tipo, que representa a los árboles binarios:  
+- `data AB a = Nil | Bin (AB a) a (AB a)`
+
+#### i. Usando recursión explícita, definir los esquemas de recursión estructural (`foldAB`) y primitiva (`recAB`), y dar sus tipos.
+
+- 
+    ```hs
+    -- args en orden:
+    --  - caso base (Nil) :: b
+    --  - funcion caso Bin :: 
+    --      - resIzq    :: b, pues fue procesador por fold
+    --      - x         :: a, tipo del valor de nodo
+    --      - resDer    :: b, pues fue procesador por fold
+    --      - resultado :: b
+    --  - árbol a procesar :: AB a
+
+    foldAB :: b -> (b -> a -> b -> b) -> AB a -> b
+    foldAB casoNil _ Nil                   = casoNil
+    foldAB casoNil fBin (Bin izq raiz der) =
+        fBin
+            (foldAB casoNil fBin izq)
+            raiz
+            (foldAB casoNil fBin der)
+    ```
+
+- 
+    ```hs
+    -- recAB igual que foldAB pero recibiendo también los subárboles originales
+    -- args en orden:
+    --  - caso base (Nil) :: b
+    --  - funcion caso Bin :: 
+    --      - izq       :: a, tipo del subarbol izquierdo
+    --      - resIzq    :: b, pues fue procesador por fold
+    --      - x         :: a, tipo del valor de nodo
+    --      - der       :: a, tipo del subarbol derecho
+    --      - resDer    :: b, pues fue procesador por fold
+    --      - resultado :: b
+    --  - árbol a procesar :: AB a
+
+    recAB :: b -> (AB a -> b -> a -> AB a -> b -> b) -> AB a -> b
+    recAB casoNil _ Nil                   = casoNil
+    recAB casoNil fBin (Bin izq raiz der) = 
+        fBin
+            izq
+            (recAB casoNil fBin izq)
+            raiz
+            der
+            (recAB casoNil fBin der)
+    ```

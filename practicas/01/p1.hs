@@ -307,7 +307,7 @@ mapDoble _ _ []          = []
 mapDoble f (x:xs) (y:ys) = f x y : mapDoble f xs ys
 
 
--- Ejercicio 7 -------------------------
+-- Ejercicio 9 -------------------------
 ----------------------------------------
 -- para listas tengo foldr:
 -- foldr :: (a -> b -> b) -> b -> [a] -> b
@@ -337,3 +337,53 @@ potencia a b = a *  (potencia a (b-1))
 potencia' :: Int -> Int -> Int
 potencia' a b = foldNat (\x acc -> a * acc) 1 b
 
+-- Ejercicio 12 -------------------------
+----------------------------------------
+
+data AB a = Nil | Bin (AB a) a (AB a)
+
+-- args en orden:
+--  - caso base (Nil) :: b
+--  - funcion caso Bin :: 
+--      - resIzq    :: b, pues fue procesador por fold
+--      - x         :: a, tipo del valor de nodo
+--      - resDer    :: b, pues fue procesador por fold
+--      - resultado :: b
+--  - árbol a procesar :: AB a
+
+foldAB :: b -> (b -> a -> b -> b) -> AB a -> b
+foldAB casoNil _ Nil                   = casoNil
+foldAB casoNil fBin (Bin izq raiz der) =
+    fBin
+        (foldAB casoNil fBin izq)
+        raiz
+        (foldAB casoNil fBin der)
+
+-- tests de foldAB
+size :: AB Int -> Int
+size arbol = foldAB 0 (\sizeIzq _ sizeDer -> 1 + sizeIzq + sizeDer) arbol
+
+suma :: AB Int -> Int
+suma arbol = foldAB 0 (\sizeIzq raiz sizeDer -> raiz + sizeIzq + sizeDer) arbol
+
+-- recAB igual que foldAB pero recibiendo también los subárboles originales
+-- args en orden:
+--  - caso base (Nil) :: b
+--  - funcion caso Bin :: 
+--      - izq       :: a, tipo del subarbol izquierdo
+--      - resIzq    :: b, pues fue procesador por fold
+--      - x         :: a, tipo del valor de nodo
+--      - der       :: a, tipo del subarbol derecho
+--      - resDer    :: b, pues fue procesador por fold
+--      - resultado :: b
+--  - árbol a procesar :: AB a
+
+recAB :: b -> (AB a -> b -> a -> AB a -> b -> b) -> AB a -> b
+recAB casoNil _ Nil                   = casoNil
+recAB casoNil fBin (Bin izq raiz der) = 
+    fBin
+        izq
+        (recAB casoNil fBin izq)
+        raiz
+        der
+        (recAB casoNil fBin der)
