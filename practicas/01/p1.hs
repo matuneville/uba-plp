@@ -352,12 +352,12 @@ data AB a = Nil | Bin (AB a) a (AB a)
 --  - árbol a procesar :: AB a
 
 foldAB :: b -> (b -> a -> b -> b) -> AB a -> b
-foldAB casoNil _ Nil                   = casoNil
-foldAB casoNil fBin (Bin izq raiz der) =
+foldAB casoBase _ Nil                   = casoBase
+foldAB casoBase fBin (Bin izq raiz der) =
     fBin
-        (foldAB casoNil fBin izq)
+        (foldAB casoBase fBin izq)
         raiz
-        (foldAB casoNil fBin der)
+        (foldAB casoBase fBin der)
 
 -- tests de foldAB
 size :: AB Int -> Int
@@ -379,11 +379,76 @@ suma arbol = foldAB 0 (\sizeIzq raiz sizeDer -> raiz + sizeIzq + sizeDer) arbol
 --  - árbol a procesar :: AB a
 
 recAB :: b -> (AB a -> b -> a -> AB a -> b -> b) -> AB a -> b
-recAB casoNil _ Nil                   = casoNil
-recAB casoNil fBin (Bin izq raiz der) = 
+recAB casoBase _ Nil                   = casoBase
+recAB casoBase fBin (Bin izq raiz der) = 
     fBin
         izq
-        (recAB casoNil fBin izq)
+        (recAB casoBase fBin izq)
         raiz
         der
-        (recAB casoNil fBin der)
+        (recAB casoBase fBin der)
+
+-- ii) ----
+esNil :: AB a -> Bool
+esNil Nil = True
+esNil _   = False
+
+altura :: AB a -> Int
+altura = foldAB 0 fMaxAltSub
+    where
+        fMaxAltSub = (\altIzq _ altDer -> 1 + max altIzq altDer)
+
+cantNodos :: AB Int -> Int
+cantNodos = foldAB 0 fCantSubnodos
+    where
+        fCantSubnodos = (\sizeIzq _ sizeDer -> 1 + sizeIzq + sizeDer)
+
+-- iii) ----
+
+-- Idea:
+-- Usar foldAB
+-- Arrancar con la raíz r
+-- En cada nodo comparar:
+--     el valor actual x
+--     con el mejor entre los hijos
+mejorSegunAB :: (a -> a -> Bool) -> AB a -> a
+mejorSegunAB _ Nil                = error "No hay mejor en árbol vacío"
+mejorSegunAB f (Bin izq raiz der) = foldAB raiz fBin (Bin izq raiz der)
+    where
+        fBin mejorIzq x mejorDer =
+            if f x mejorHijo
+                then x
+            else
+                mejorHijo
+            where
+                mejorHijo = if f mejorIzq mejorDer then mejorIzq else mejorDer
+
+
+-- iv) ----
+-- En cada nodo verificar:
+--     1. izq es ABB
+--     2. der es ABB
+--     3. todos los de izq ≤ x
+--     4. todos los de der > x
+
+-- Problema: Las condiciones 3 y 4 necesitan:
+--     máximo del izquierdo
+--     mínimo del derecho
+-- o sea, se necesita info global del subárbol, no solo un booleano
+
+-- lo que puedo hacer entonces es:
+--      esABB izq &&
+--      esABB der &&
+--      (max izq <= x) &&
+--      (min der > x)
+
+-- recAB :: b -> (AB a -> b -> a -> AB a -> b -> b) -> AB a -> b
+
+esABB :: Ord a => AB a -> Bool
+esABB Nil                = True
+esABB (Bin izq raiz der) = recAB True fBin (Bin izq raiz der)
+    where
+        fBin izq resIzq x der resDer =
+            resIzq && resDer &&
+            (esNil izq || (mejorSegunAB (>) izq) <= x) && -- el mayor de izq es menor que raiz
+            (esNil der || (mejorSegunAB (<) der) > x) -- el menor de der es mayor que raiz

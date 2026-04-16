@@ -545,12 +545,12 @@ Considerar el siguiente tipo, que representa a los árboles binarios:
     --  - árbol a procesar :: AB a
 
     foldAB :: b -> (b -> a -> b -> b) -> AB a -> b
-    foldAB casoNil _ Nil                   = casoNil
-    foldAB casoNil fBin (Bin izq raiz der) =
+    foldAB casoBase _ Nil                   = casoBase
+    foldAB casoBase fBin (Bin izq raiz der) =
         fBin
-            (foldAB casoNil fBin izq)
+            (foldAB casoBase fBin izq)
             raiz
-            (foldAB casoNil fBin der)
+            (foldAB casoBase fBin der)
     ```
 
 - 
@@ -568,12 +568,85 @@ Considerar el siguiente tipo, que representa a los árboles binarios:
     --  - árbol a procesar :: AB a
 
     recAB :: b -> (AB a -> b -> a -> AB a -> b -> b) -> AB a -> b
-    recAB casoNil _ Nil                   = casoNil
-    recAB casoNil fBin (Bin izq raiz der) = 
+    recAB casoBase _ Nil                   = casoBase
+    recAB casoBase fBin (Bin izq raiz der) = 
         fBin
             izq
-            (recAB casoNil fBin izq)
+            (recAB casoBase fBin izq)
             raiz
             der
-            (recAB casoNil fBin der)
+            (recAB casoBase fBin der)
     ```
+
+#### ii. Definir las funciones `esNil`, `altura` y `cantNodos` (para `esNil` puede utilizarse `case` en lugar de `foldAB` o `recAB`).
+
+- 
+    ```hs
+    esNil :: AB a -> Bool
+    esNil Nil = True
+    esNil _   = False
+
+    altura :: AB a -> Int
+    altura = foldAB 0 fMaxAltSub
+        where
+            fMaxAltSub = (\altIzq _ altDer -> 1 + max altIzq altDer)
+
+    cantNodos :: AB Int -> Int
+    cantNodos = foldAB 0 fCantSubnodos
+        where
+            fCantSubnodos = (\sizeIzq _ sizeDer -> 1 + sizeIzq + sizeDer)
+    ```
+
+#### iii. Definir la función `mejorSegún :: (a -> a -> Bool) -> AB a -> a`, análoga a la del ejercicio 3, para árboles. Se recomienda definir una función auxiliar para comparar la raíz con un posible resultado de la recursión para un árbol que puede o no ser Nil.
+
+- 
+    ```hs
+    mejorSegunAB :: (a -> a -> Bool) -> AB a -> a
+    mejorSegunAB _ Nil                = error "No hay mejor en árbol vacío"
+    mejorSegunAB f (Bin izq raiz der) = foldAB raiz fBin (Bin izq raiz der)
+        where
+            fBin mejorIzq x mejorDer =
+                if f x mejorHijo
+                    then x
+                else
+                    mejorHijo
+                where
+                    mejorHijo = if f mejorIzq mejorDer then mejorIzq else mejorDer
+    ```
+
+#### iv. Definir la función `esABB :: Ord a => AB a -> Bool` que chequea si un árbol es un árbol binario de búsqueda. Recordar que, en un árbol binario de búsqueda, el valor de un nodo es mayor o igual que los valores que aparecen en el subárbol izquierdo y es estrictamente menor que los valores que aparecen en el subárbol derecho.
+
+- 
+    ```hs
+    esABB :: Ord a => AB a -> Bool
+    esABB Nil                = True
+    esABB (Bin izq raiz der) = recAB True fBin (Bin izq raiz der)
+        where
+            fBin izq resIzq x der resDer =
+                resIzq && resDer &&
+                (esNil izq || (mejorSegunAB (>) izq) <= x) && -- el mayor de izq es menor que raiz
+                (esNil der || (mejorSegunAB (<) der) > x) -- el menor de der es mayor que raiz
+    ```
+
+#### v. Justificar la elección de los esquemas de recursión utilizados para los tres puntos anteriores.
+
+- Para **esNil** no hace falta ningún esquema de recursión, porque solo distinguimos entre `Nil` y `Bin`. Con pattern matching alcanza.
+- Para **altura** y **cantNodos** usamos **recursión estructural (`foldAB`)** porque:
+    - solo necesitamos combinar resultados de los subárboles
+    - no hace falta mirar la estructura original
+    - en cada nodo usamos únicamente: resultado izquierdo, valor (a veces ni se usa), resultado derecho.
+
+- Para **mejorSegunAB** usamos también recursión estructural (`foldAB`) porque:
+    - queremos obtener un único valor a partir del árbol
+    - en cada nodo alcanza con:
+        - el mejor del subárbol izquierdo
+        - el valor actual
+        - el mejor del subárbol derecho
+    - no necesitamos acceder a los subárboles originales
+
+- Para **esABB** usamos **recursión primitiva (`recAB`)** porque:
+    - necesitamos información de los subárboles **y también la estructura original**
+    - en particular, tenemos que:
+        - comparar la raíz con valores del subárbol izquierdo y derecho
+        - eso requiere acceder a `izq` y `der`, no solo a `resIzq` y `resDer`
+    - Con `foldAB` perderíamos esa información, o tendríamos que complicar el tipo resultado.
