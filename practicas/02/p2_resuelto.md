@@ -36,8 +36,7 @@ Demostrar las siguientes igualdades usando los lemas de generación cuando sea n
 > - **Lema de Generación de Pares:**  
 > Dado p::(a,b), siempre podemos decir que ∃x::a, ∃y::b tales que p=(x,y)
 
-1.
-
+1. 
     ```hs
     i. ∀ p::(a,b) . intercambiar (intercambiar p) = p
 
