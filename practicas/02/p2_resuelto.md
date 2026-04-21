@@ -38,7 +38,7 @@ Demostrar las siguientes igualdades usando los lemas de generación cuando sea n
 
 1. 
     ```hs
-    i. ∀ p::(a,b) . intercambiar (intercambiar p) = p
+    ∀ p::(a,b) . intercambiar (intercambiar p) = p
 
     -- Lema de Generación de Pares:         {GP}
     -- dado p::(a,b) ⇒ ∃x::a, ∃y::b. p=(x,y)
@@ -51,7 +51,7 @@ Demostrar las siguientes igualdades usando los lemas de generación cuando sea n
 
 2. 
     ```hs
-    ii. ∀ p::(a,(b,c)) . asociarD (asociarI p) = p
+    ∀ p::(a,(b,c)) . asociarD (asociarI p) = p
 
     -- Lema de Generación de Pares:         {GP}
     -- dado p::(a,(b,c)) ⇒ ∃x::a, ∃z::(b,c), ∃z1::b, ∃z2::c
@@ -63,17 +63,38 @@ Demostrar las siguientes igualdades usando los lemas de generación cuando sea n
     {GP} = p
     ```
 
+> - **Lema de generación para sumas**  
+> Si e :: Either a b, siempre podemos decir que vale:
+>   - o bien ∃x :: a. e = Left x
+>   - o bien ∃y :: b. e = Right y
+
 3. 
     ```hs
-    iii. ∀ p::Either a b . espejar (espejar p) = p
+    ∀ p::Either a b . espejar (espejar p) = p
+    
+    -- Lema de generación para sumas        {GS}
+    -- dado p :: Either a b:
+    --  (∃x::a. p=Left x)  ∨  (∃y::b. p=Right y)
+
+    -- caso p = Left x {GS}
+    espejar (espejar (Left x))
+    {E1} = espejar (Right x)
+    {E2} = Left x
+    {GS} = p
+
+    -- caso p = Right y {GS}
+    espejar (espejar (Right y))
+    {E1} = espejar (Left y)
+    {E2} = Right y
+    {GS} = p
     ```
 
 4. 
     ```hs
-    iv. ∀ f::a->b->c . ∀ x::a . ∀ y::b . flip (flip f) x y = f x y
+    ∀ f::a->b->c . ∀ x::a . ∀ y::b . flip (flip f) x y = f x y
     ```
 
 5. 
     ```hs
-    v. ∀ f::a->b->c . ∀ x::a . ∀ y::b . curry (uncurry f) x y = f x y
+    ∀ f::a->b->c . ∀ x::a . ∀ y::b . curry (uncurry f) x y = f x y
     ```
