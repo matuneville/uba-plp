@@ -89,12 +89,71 @@ Demostrar las siguientes igualdades usando los lemas de generación cuando sea n
     {GS} = p
     ```
 
+
 4. 
     ```hs
     ∀ f::a->b->c . ∀ x::a . ∀ y::b . flip (flip f) x y = f x y
+    
+    flip (flip f) x y
+    {F} = (flip f) y x
+    {F} = f x y
     ```
 
 5. 
     ```hs
     ∀ f::a->b->c . ∀ x::a . ∀ y::b . curry (uncurry f) x y = f x y
+
+    curry (uncurry f) x y
+    {U} = (uncurry f) (x,y)
+    {C} = f x y
+    ```
+
+    ---
+
+### Ejercicio 2
+
+Demostrar las siguientes igualdades utilizando el principio de extensionalidad funcional:
+
+> - **Principio de extensionalidad funcional**
+> Si (∀x :: a. f x = g x) entonces f = g.
+
+> _Otras definiciones útiles_
+> ```hs
+> id x = x              {ID}
+> (g . f) x = g (f x)   {COMP}
+> ```
+
+1. 
+    ```hs
+    flip . flip = id
+    
+    -- Gracias a exten. funcional, basta con ver:
+    -- (∀x :: a. ∀y :: b. id f x y = (flip . flip) f x y)    {EF}
+    -- ⇒
+    -- id f = (flip . flip) f.
+    -- veamoslo entonces para todo x y
+
+    (flip . flip) f x y
+    {COMP} = flip (flip (f x y))
+    {F}    = flip f y x
+    {F}    = f x y
+    {ID}   = id f x y
+
+    -- Vale para todo x y, luego id f = flip (flip f)
+    ````
+
+2. 
+    ```hs
+    ∀ f::(a,b)->c . uncurry (curry f) = f
+    ```
+
+3. 
+    ```hs
+    flip const = const id
+    ```
+
+4. 
+    ```hs
+    ∀ f::a->b . ∀ g::b->c . ∀ h::c->d . ((h . g) . f) = (h . (g . f))
+    -- con la definición usual de la composición: (.) f g x = f (g x).
     ```
