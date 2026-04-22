@@ -121,6 +121,7 @@ Demostrar las siguientes igualdades utilizando el principio de extensionalidad f
 > ```hs
 > id x = x              {ID}
 > (g . f) x = g (f x)   {COMP}
+> const x _ = x         {CONST}
 > ```
 
 1. 
@@ -139,21 +140,53 @@ Demostrar las siguientes igualdades utilizando el principio de extensionalidad f
     {F}    = f x y
     {ID}   = id f x y
 
-    -- Vale para todo x y, luego id f = flip (flip f)
+    -- Vale para todo x y, luego por {EF} vale: id f = flip (flip f)
     ````
 
 2. 
     ```hs
     ∀ f::(a,b)->c . uncurry (curry f) = f
+
+    -- Por Lema de generación de pares, podemos decir que   {PAR}
+    -- siempre existen x::a, y::b . p=(x,y)
+
+    uncurry (curry f) p
+    {PAR} = uncurry (curry f) (x,y)
+    {U}   = (curry f) x y
+    {C}   = f (x,y)
+    {PAR} = f p
+
+    -- Vale para todo p, luego por {EF} vale: f = uncurry (curry f)
     ```
 
 3. 
     ```hs
     flip const = const id
+    
+
+    -- quiero ver que:
+    -- {EF} (∀x :: a. ∀y :: b. flip const x y = const id x y)
+
+    flip const x y
+    {F}     = const y x
+    {CONST} = y
+    {ID}    = id y
+    {CONST} = const (id y) x   -- ?????? me quedo al reves 🤔
     ```
 
 4. 
     ```hs
     ∀ f::a->b . ∀ g::b->c . ∀ h::c->d . ((h . g) . f) = (h . (g . f))
     -- con la definición usual de la composición: (.) f g x = f (g x).
+
+    -- quiero ver que:
+    -- {EF} (∀x :: a. ∀y :: b. ∀z :: c. 
+    --      ((h . g) . f) x = (h . (g . f)) x)
+
+    ((h . g) . f) x 
+    {COMP} = h (g (f x))
+    {COMP} = h ((g . f) x)
+    {COMP} = (h . (g . f)) x
+
+    -- luego por {EF}: ((h . g) . f) = (h . (g . f)))
     ```
