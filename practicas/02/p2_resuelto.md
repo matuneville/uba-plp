@@ -190,3 +190,234 @@ Demostrar las siguientes igualdades utilizando el principio de extensionalidad f
 
     -- luego por {EF}: ((h . g) . f) = (h . (g . f)))
     ```
+
+## Demostración de propiedades sobre listas
+
+_En esta sección usaremos las siguientes definiciones (y las de `elem`, `foldr`, `foldl`, `map` y `alter` vistas en clase):_  **Leer `definiciones_utiles.md`**.
+
+> #### Inducción en Listas
+> 1. Pruebo P([ ])
+> 2. Pruebo que si vale P(xs) entonces para todo elemento x vale P(x:xs).
+>
+> **Pasos a seguir:**
+> 1. Leer la propiedad, entenderla y convencerse de que es verdadera.
+> 2. Plantear la propiedad como predicado unario.
+> 3. Plantear el esquema de inducci´on.
+> 4. Plantear y resolver el o los caso(s) base.
+> 5. Plantear y resolver el o los caso(s) inductivo(s).
+
+### Ejercicio 3
+
+Demostrar las siguientes propiedades:  
+
+1. 
+    ```hs
+    ∀ xs::[a] . length (duplicar xs) = 2 * length xs
+
+    -- Tengo que demostrar que vale
+    -- ∀ xs::[a]. P(xs): length (duplicar xs) = 2 * length xs
+    -- Veo por principio de inducción estructural sobre listas
+
+    -- Caso base: P([]) ------
+    -- length (duplicar []) = 2 * length []
+    length (duplicar [])
+    {D0} = length []
+    {L0} = 0
+         = 2 * 0
+    {L0} = 2 * length [] -- ✓
+
+    -- Paso inductivo: ------
+
+    -- Hipótesis inductiva:
+    -- P(xs) = length (duplicar xs) = 2 * length xs
+
+    -- ∀x::a. ∀xs::[a]. Usando P(xs) como HI, QVQ vale P(x:xs).
+    -- P(x:xs): length (duplicar (x:xs)) = 2 * length (x:xs)
+    length (duplicar (x:xs))
+    {D1} = length (x : x : duplicar xs)
+    {L1} = 1 + length (x : duplicar xs)
+    {L1} = 1 + 1 + length (duplicar xs)
+    {HI} = 1 + 1 + 2 * length xs
+         = 2 + 2 * length xs
+         = 2 * (1 + length xs)
+    {L1} = 2 * length (x:xs) -- ✓
+    -- QED
+    ```
+
+2. 
+    ```hs
+    ∀ xs::[a] . ∀ ys::[a] . length (xs ++ ys) = length xs + length ys
+
+    -- Tengo que demostrar que vale
+    -- ∀ xs::[a] . ∀ ys::[a]. P(xs): length (xs ++ ys) = length xs + length ys
+
+    -- Caso base: P([]) ------
+    -- length ([] ++ ys) = length [] + length ys
+    length ([] ++ ys)
+    {++0} = length ys
+          = 0 + length ys
+    {L0}  = length [] + length ys -- ✓
+
+    -- Paso inductivo: ------
+
+    -- Hipótesis inductiva:
+    -- P(xs) = length (xs ++ ys) = length xs + length ys
+
+    -- ∀x::a. ∀xs::[a]. ∀ys::[a]. Usando P(xs) como HI, QVQ vale P(x:xs).
+    -- P(x:xs): length ((x:xs) ++ ys) = length (x:xs) + length ys
+    length ((x:xs) ++ ys)
+    {++1} = length (x : (xs ++ ys))
+    {L1}  = 1 + length (xs ++ ys)
+    {HI}  = 1 + length xs + length ys
+    {L1}  = length (x:xs) + length ys -- ✓
+    -- ∎
+    ```
+
+3. 
+    ```hs
+    ∀ xs::[a] . ∀ x::a . [x] ++ xs = x:xs
+    
+    -- bruh... más de lo mismo
+    ```
+
+4. 
+    ```hs
+    ∀ xs::[a] . xs ++ [] = xs
+
+    -- de vuelta... má' de lo mismo
+    ```
+
+5. 
+    ```hs
+    ∀ xs::[a] . ∀ ys::[a] . ∀ zs::[a] . (xs ++ ys) ++ zs = xs ++ (ys ++ zs)
+    ```
+
+6. 
+    ```hs
+    ∀ xs::[a] . ∀ f::(a->b) . length (map f xs) = length xs
+
+    --- bla bla bla la inducción queda:
+
+    -- Caso Base
+    -- P([]): length (map f []) = length []
+    length (map f [])
+    {M0} = length [] -- ✓
+
+    -- bla bla
+    -- Paso Inductivo
+    -- QVQ vale P(x) ⇒ P(x:xs) (la HI es lo que dice el enunciado...)
+    -- P(x:xs): length (map f (x:xs)) = length (x:xs)
+    length (map f (x:xs))
+    {M1} = length (f x : map f xs)
+    {L1} = 1 + length (map f xs)
+    {HI} = 1 + length xs
+    {L1} = length (x:xs) -- ✓
+    -- ∎
+    ```
+
+7. 
+    ```hs
+    ∀ xs::[a] . ∀ p::a->Bool . ∀ e::a . (elem e (filter p xs) ⇒ elem e xs) (si vale Eq a)
+    ```
+
+### Ejercicio 4
+
+Demostrar las siguientes propiedades:
+
+1. 
+    ```hs
+    reverse = foldr (\x rec -> rec ++ (x:[])) []
+
+    -- Quiero demostrar que ∀xs:[a].
+    -- reverse xs = foldr (\x rec -> rec ++ (x:[])) [] xs
+    -- por extensionalidad, ambas funciones son iguales si demuestro eso
+
+    -- Sea P(xs):
+    --    reverse xs
+    --    = foldr (\x rec -> rec ++ (x:[])) [] xs
+    --    = foldl (flip (:)) [] xs
+
+    -- Veo por principio de inducción estructural sobre listas
+
+    -- Caso Base: P([])
+    -- reverse [] = foldr (\x rec -> rec ++ (x:[])) [] []
+    reverse []
+    {R0}  = foldl (flip (:)) [] [] -- {FL0} foldl f ac [] = ac
+    {FL0} = []
+          = foldr (\x rec -> rec ++ (x:[])) [] [] -- foldr f z [] = z
+    {FR0} = [] -- ✓
+
+    -- Paso inductivo
+    -- HI: vale P(xs)
+    -- QVQ: HI ⇒ P(x:xs)
+    reverse (x:xs)
+    {R0}  = foldl (flip (:)) [] (x:xs) -- {FL1} foldl f ac (x:xs) = foldl f (f ac x) xs
+    {FL1} = foldl (flip (:)) ((flip (:)) [] x) xs
+    {FL}  = foldl (flip (:)) ((:) x []) xs
+    {:}   = foldl (flip (:)) [x] xs -- *1*
+
+    foldr (\y rec -> rec ++ (y:[])) [] (x:xs) -- {FR1} foldr f z (x:xs) = f x (foldr f z xs)
+    {FR1} = (\y rec -> rec ++ (y:[])) x (foldr (\y rec -> rec ++ (y:[])) [] xs) 
+    {HI}  = (\y rec -> rec ++ (y:[])) x (reverse xs)
+    {:}   = (\y rec -> rec ++ [y]) x (reverse xs) -- y ahora aplico la lambda con y=x y rec=(foldr...)
+          = (reverse xs) ++ [x]
+    {R0}  = (foldl (flip (:)) [] xs) ++ [x] -- *2*
+
+    -- Entonces nos queda que:
+    -- *1* = *2*
+    foldl (flip (:)) [x] xs = (foldl (flip (:)) [] xs) ++ [x]
+
+    -- Pruebo esto con OTRA INDUCCION (fuck my life)
+    -- reemplazo [x] por ys ya que es una lista cualquiera
+    
+    -- De nuevo veo con extensionalidad
+    -- ∀x:a. ∀xs:[a]. foldl (flip (:)) ys xs = (foldl (flip (:)) [] xs) ++ ys
+    
+    -- Sea P(xs): foldl (flip (:)) ys xs = (foldl (flip (:)) [] xs) ++ ys
+
+    -- Caso Base.
+    -- P([]): foldl (flip (:)) ys [] = (foldl (flip (:)) [] []) ++ ys
+    foldl (flip (:)) ys []
+    {FL0} = ys
+          = (foldl (flip (:)) [] []) ++ ys
+    {FL0} = [] ++ ys
+    {++0} = ys -- ✓
+
+    -- Paso Inductivo. Mi HI es que vale P(xs)
+    -- QVQ: ∀x:a. ∀xs:[a]. P(xs) → P(x:xs) 
+    -- P(x:xs) = foldl (flip (:)) ys (x:xs) = (foldl (flip (:)) [] (x:xs)) ++ ys
+    foldl (flip (:)) ys (x:xs)
+    {FL1} = foldl (flip (:)) ((flip (:)) ys x) xs
+    {FL}  = foldl (flip (:)) ((:) x ys) xs
+    {:}   = foldl (flip (:)) (x:ys) xs -- en este caso la ys' de HI es (x:ys)
+    {HI}  = (foldl (flip (:)) [] xs) ++ (x:ys) -- *3*
+
+    (foldl (flip (:)) [] (x:xs)) ++ ys
+    {FL1} = (foldl (flip (:)) ((flip (:)) [] x) xs) ++ ys
+    {FL}  = (foldl (flip (:)) ((:) x []) xs) ++ ys
+    {:}   = (foldl (flip (:)) [x] xs) ++ ys -- en este caso la ys' de HI es [x]
+    {HI}  = ((foldl (flip (:)) [] xs) ++ [x]) ++ ys
+          = (foldl (flip (:)) [] xs) ++ [x] ++ ys
+    {++1} = (foldl (flip (:)) [] xs) ++ x : ([] ++ ys)
+    {++0} = (foldl (flip (:)) [] xs) ++ x : ys
+    {:}   = (foldl (flip (:)) [] xs) ++ (x:ys) -- *4*
+
+    -- *3* = *4*
+    -- ✓
+
+    -- El paso inductivo de la primera inducción dependía de esta igualdad de funciones,
+    -- que acabamos de demostrar que es verdadera.
+    -- ∎
+    ```
+
+2. 
+    ```hs
+    ∀ xs::[a] . ∀ ys::[a] . reverse (xs ++ ys) = reverse ys ++ reverse xs
+    ```
+
+3. 
+    ```hs
+    ∀ xs::[a] . ∀ x::a . reverse (xs ++ [x]) = x:reverse xs
+    ```  
+
+_Nota: en adelante, siempre que se necesite usar reverse, se podrá utilizar cualquiera de las dos definiciones, según se considere conveniente._
