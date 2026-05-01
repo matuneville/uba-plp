@@ -418,6 +418,68 @@ Demostrar las siguientes propiedades:
 3. 
     ```hs
     ∀ xs::[a] . ∀ x::a . reverse (xs ++ [x]) = x:reverse xs
+
+    -- Tengo que demostrar que vale
+    -- ∀ xs::[a] . ∀ x::a. P(xs): reverse (xs ++ [x]) = x:reverse xs
+
+    -- Caso base: P([]) ------
+    -- reverse ([] ++ [x]) = x:reverse []
+    reverse ([] ++ [x])
+    {++0} = reverse ([x])
+    {R0}  = foldl (flip (:)) [] [x]
+    {FL1} = foldl (flip (:)) ((flip (:)) [] x) []
+    {FL}  = foldl (flip (:)) ((:) x []) []
+    {:}   = foldl (flip (:)) [x] []
+    {FL0} = [x]
+    = x : reverse []
+    {R0}  = x : foldl (flip (:)) [] []
+    {FL0} = x : []
+    {:}   = [x] -- ✓
+
+    -- Paso inductivo: ------
+    -- QVQ: P(ys) ⇒ P(y:ys)
+    -- HI: vale P(ys)
+    -- P(ys): reverse (ys ++ [x]) = x:reverse ys
+    -- P(y:ys): reverse ((y:ys) ++ [x]) = x:reverse (y:ys)
+    reverse ((y:ys) ++ [x])
+    {++1}   = reverse (y : (ys ++ [x]))
+    {R0}    = foldl (flip (:)) [] (y : (ys ++ [x]))
+    {FL1}   = foldl (flip (:)) ((flip (:)) [] y) (ys ++ [x])
+    {FL}{:} = foldl (flip (:)) [y] (ys ++ [x])
+
+    x : reverse (y:ys)
+    {R0}    = x : foldl (flip (:)) [] (y:ys)
+    {FL1}   = x : foldl (flip (:)) ((flip (:)) [] y) ys
+    {FL}{:} = x : foldl (flip (:)) [y] ys
+
+    -- Ahora quiero ver con otra induccion que
+    -- ∀x:a. ∀y:a. ∀[ys]:[a]
+    -- P(ys): foldl (flip (:)) [y] (ys ++ [x]) = x : foldl (flip (:)) [y] ys
+    -- De nuevo veo por extensionalidad que vale eso
+
+    -- P([])
+    foldl (flip (:)) [y] ([] ++ [x])
+    {++0}   = foldl (flip (:)) [y] [x]
+    {FL1}   = foldl (flip (:)) ((flip (:)) [y] x) []
+    {FL}{:} = foldl (flip (:)) [x,y] []
+    {FL0}   = [x,y]
+    = x : foldl (flip (:)) [y] []
+    {FL0}   = x : [y]
+            = [x,y] -- ✓ 
+
+    -- QVQ: P(ys) ⇒ P(z:ys)
+    -- HI: P(ys): foldl (flip (:)) [y] (ys ++ [x]) = x : foldl (flip (:)) [y] ys
+    -- P(z:ys): foldl (flip (:)) [y] ((z:ys) ++ [x]) = x : foldl (flip (:)) [y] (z:ys)
+    foldl (flip (:)) [y] ((z:ys) ++ [x])
+    {++1}   = foldl (flip (:)) [y] (z : (ys ++ [x]))
+    {FL1}   = foldl (flip (:)) ((flip (:)) [y] z) (ys ++ [x])
+    {FL}{:} = foldl (flip (:)) [z,y] (ys ++ [x])
+
+    x : foldl (flip (:)) [y] (z:ys)
+    {FL1}   = x : foldl (flip (:)) ((flip (:)) [y] z) ys
+    {FL}{:} = x : foldl (flip (:)) [z,y] ys
+
+    -- no tengo idea como terminarlo
     ```  
 
 _Nota: en adelante, siempre que se necesite usar reverse, se podrá utilizar cualquiera de las dos definiciones, según se considere conveniente._
