@@ -125,3 +125,34 @@ productoAB :: AB Int -> Int
 productoAB Nil                             = 1
 productoAB (Bin nodoIzq nodoPadre nodoDer) =
     (productoAB nodoIzq) * nodoPadre * (productoAB nodoDer)
+
+-- Clase introduccion
+
+aparece :: Char -> String -> Bool
+aparece c [] = False
+aparece c (x:xs) 
+    | c == x = True
+    | otherwise = aparece c xs
+
+-- ---
+
+ordenar :: Ord a => [a] -> [a]
+ordenar [] = []
+ordenar (x:xs) = insertarEnOrden x (ordenar xs)
+
+insertarEnOrden :: Ord a => a -> [a] -> [a]
+insertarEnOrden x [] = [x]
+insertarEnOrden x (y:ys)
+    | x <= y = (x:y:ys)
+    | otherwise = y : (insertarEnOrden x ys)
+
+
+-- ---
+
+subsequencias :: [a] -> [[a]]
+subsequencias []     = [[]]
+subsequencias (x:xs) = subsequencias xs ++ agregoASubsequencias x (subsequencias xs)
+
+agregoASubsequencias :: a -> [[a]] -> [[a]]
+agregoASubsequencias y []     = []
+agregoASubsequencias y (x:xs) = (y:x) : agregoASubsequencias y xs
