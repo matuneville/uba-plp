@@ -22,6 +22,8 @@
 > - `suma :: Int -> Int -> Int`
 > - `suma x y = x + y`
 >
+> En Haskell, **todas** las funciones toman 1 solo argumento, y se van pasando de a 1.
+>
 > `suma 1` devuelve una función: `suma 1 :: Int -> Int`
 >
 > #### Función no currificada (usa tupla)
@@ -120,8 +122,6 @@
     uncurry' :: (a -> b -> c) -> (a, b) -> c
     uncurry' f (x, y) = f x y
     ```
-
-#### Testeado:
 - 
     ```hs
     ghci> maxCurried 3 5
@@ -158,11 +158,37 @@
     No existe en Haskell un tipo como `(tupla de n elementos -> c) -> arg1 -> arg2 -> ... -> argN -> c` para n arbitrario.
 
 ---
+
+### Ejercicio 4
+
+#### Definir la lista infinita `paresDeNat::[(Int,Int)]`, que contenga todos los pares de números naturales: (0,0), (0,1), (1,0), etc.
+
+
+- 
+    ```hs
+    paresDeNat :: [(Int,Int)]
+    paresDeNat = [(x,y) | s <- [0..], x <- [0..s], let y = s - x]
+    ```
+
+- 
+    ```hs
+    ghci> take 10 $ paresDeNat 
+    [(0,0),(0,1),(1,0),(0,2),(1,1),(2,0),(0,3),(1,2),(2,1),(3,0)]
+    ```
+
+
+### Ejercicio 6 📝 TODO
+
+Escribir la función `listasQueSuman :: Int -> [[Int]]` que, dado un número natural n, devuelve todas las listas de enteros positivos (es decir, mayores o iguales que 1) cuya suma sea n. Para este ejercicio se permite usar recursión explícita. Pensar por qué la recursón utilizada no es estructural. (Este ejercicio no es de generación infinita, pero puede ser útil para otras funciones que generen listas infinitas de listas).
+
+### Ejercicio 7 📝 TODO
+
+Definir en Haskell una lista que contenga todas las listas finitas de enteros positivos (esto es, con elementos mayores o iguales que 1).
+
+---
 ---
 
 ## Esquemas de Recursión
-
-### Ejercicio 3
 
 > `foldr` recorre una lista y va acumulando un resultado aplicando una función a cada elemento. Su tipo es:
 > ```hs
@@ -172,8 +198,57 @@
 > - El primer argumento es la función que combina cada elemento con el acumulador
 > - El segundo es el valor inicial (caso base)
 > - El tercero es la lista
+>
+> ```hs
+> -- ejecución mental
+> foldr (+) 0 [1,2,3,4] = 
+> 1 + (2 + (3 + (4 + 0)))
+> = 1 + (2 + (3 + 4))
+> = 1 + (2 + 7)
+> = 1 + 9
+> = 10
+> ```
+>
+> `foldl` en cambio: 
+> 
+> ```hs
+> foldl (+) 0 [1,2,3,4] = 
+> ((((0 + 1) + 2) + 3) + 4)
+> = (((1 + 2) + 3) + 4)
+> = ((3 + 3) + 4)
+> = (6 + 4)
+> = 10
+> ```
 
-#### i. Redefinir usando `foldr` las funciones `sum`, `elem`, `(++)`, `filter` y `map`.
+### Ejercicio 8
+
+#### i. Definir utilizando map y filter:
+1. Una función que dada una lista de palabras devuelve una lista con aquellas que tienen menos de 5 letras.
+2. Una función que dada una lista de notas devuelve una lista de booleanos que indiquen si la nota está aprobada (es mayor a 6).
+3. Una función que dada una lista de números devuelve una lista que contiene solo los números pares elevados al cuadrado.
+
+- 
+    ```hs
+    palabrasCortas :: [String] -> [String]
+    palabrasCortas = filter esCorta
+        where
+            esCorta = \s -> length s < 5
+
+    notasAprobadas :: [Int] -> [Bool]
+    notasAprobadas = map esAprobada
+        where
+            esAprobada = \n -> n >= 6
+
+    numerosParesAlCuadrado :: [Int] -> [Int]
+    numerosParesAlCuadrado = map alCuadrado . filter esPar
+    -- numerosParesAlCuadrado xs = map alCuadrado $ filter esPar xs
+    -- numerosParesAlCuadrado xs = map alCuadrado (filter esPar xs)
+        where
+            esPar = \n -> n `mod` 2 == 0
+            alCuadrado = \n -> n * n
+    ```
+
+#### ii. Redefinir usando `foldr` las funciones `sum`, `elem`, `(++)`, `filter` y `map`.
 
 1. 
     ```hs
@@ -223,7 +298,7 @@
     map' f = foldr (\x acc -> f x : acc) []
     ```
 
-#### ii. Definir la función `mejorSegún :: (a -> a -> Bool) -> [a] -> a`, que devuelve el máximo elemento de la lista según una función de comparación, utilizando `foldr1`. Por ejemplo, `maximum = mejorSegún (>)`.
+#### iii. Definir la función `mejorSegún :: (a -> a -> Bool) -> [a] -> a`, que devuelve el máximo elemento de la lista según una función de comparación, utilizando `foldr1`. Por ejemplo, `maximum = mejorSegún (>)`.
 
 - 
     > `foldr1` es igual a `foldr` pero no necesita caso base, usa el último elemento de la lista como valor inicial. Su tipo es:
@@ -253,7 +328,7 @@
     -- = 3
     ```
 
-#### iii. Definir la función `sumasParciales :: Num a => [a] -> [a]`, que dada una lista de números devuelve otra de la misma longitud, que tiene en cada posición la suma parcial de los elementos de la lista original desde la cabeza hasta la posición actual. Por ejemplo, `sumasParciales [1,4,-1,0,5] = [1,5,4,4,9]`.
+#### iv. Definir la función `sumasParciales :: Num a => [a] -> [a]`, que dada una lista de números devuelve otra de la misma longitud, que tiene en cada posición la suma parcial de los elementos de la lista original desde la cabeza hasta la posición actual. Por ejemplo, `sumasParciales [1,4,-1,0,5] = [1,5,4,4,9]`.
 
 -
     ```hs
@@ -264,7 +339,7 @@
     sumasParciales' xs = tail (scanl (+) 0 xs)
     ```
 
-#### iv. Definir la función `sumaAlt`, que realiza la suma alternada de los elementos de una lista. Es decir, da como resultado: el primer elemento, menos el segundo, más el tercero, menos el cuarto, etc. Usar `foldr`.
+#### v. Definir la función `sumaAlt`, que realiza la suma alternada de los elementos de una lista. Es decir, da como resultado: el primer elemento, menos el segundo, más el tercero, menos el cuarto, etc. Usar `foldr`.
 
 - 
     ```hs
@@ -280,7 +355,7 @@
     sumaAlt xs = foldr1 (-) xs
     ```
 
-#### v. Hacer lo mismo que en el punto anterior, pero en sentido inverso (el último elemento menos el anteúltimo, etc.). Pensar qué esquema de recursión conviene usar en este caso.
+#### vi. Hacer lo mismo que en el punto anterior, pero en sentido inverso (el último elemento menos el anteúltimo, etc.). Pensar qué esquema de recursión conviene usar en este caso.
 
 - 
     ```hs
@@ -324,46 +399,7 @@
 > f (x:xs) = ... f (tail xs) ...
 > ```
 
-
-### Ejercicio 5
-
-#### Indicar si la recursión utilizada en cada una de ellas es o no estructural. Si lo es, reescribirla utilizando `foldr`. En caso contrario, explicar el motivo.
-
-```hs
-elementosEnPosicionesPares :: [a] -> [a]
-elementosEnPosicionesPares [] = []
-elementosEnPosicionesPares (x:xs) =
-    if null xs
-    then [x]
-    else x : elementosEnPosicionesPares (tail xs)
-```
-
-1. No es recursión estructural ya que al hacer ell lamado recursivo utiliza `tail xs`, descartando elementos de la cola entera, `xs`.
-
-```hs
-entrelazar :: [a] -> [a] -> [a]
-entrelazar [] = id
-entrelazar (x:xs) =
-    \ys -> if null ys
-           then x : entrelazar xs []
-           else x : head ys : entrelazar xs (tail ys)
-```
-
-2. Sí es recursión estructural, ya que hace recursión sobre la cola `xs`. Si bien usa `tail ys`, eso no rompe la recursión estructural ya que `ys` no es el argumento estructural de la recursión, si no que es sólo un parámetro que no define casos base ni guía la recursión.
-Hecha con `foldr`:
-- 
-    ```hs
-    entrelazar :: [a] -> [a] -> [a]
-    entrelazar xs ys = foldr
-        (\x acc ys ->
-            if null ys then x : acc []
-            else x : head ys : acc (tail ys)
-        ) id xs ys
-    ```
-
-    ---
-
-### Ejercicio 6
+### Ejercicio 10
 
 #### El siguiente esquema captura la recursión primitiva sobre listas.
 
@@ -442,7 +478,45 @@ recr f z (x : xs) = f x xs (recr f z xs)
 
     ---
 
-### Ejercicio 7
+### Ejercicio 11
+
+#### Indicar si la recursión utilizada en cada una de ellas es o no estructural. Si lo es, reescribirla utilizando `foldr`. En caso contrario, explicar el motivo.
+
+```hs
+elementosEnPosicionesPares :: [a] -> [a]
+elementosEnPosicionesPares [] = []
+elementosEnPosicionesPares (x:xs) =
+    if null xs
+    then [x]
+    else x : elementosEnPosicionesPares (tail xs)
+```
+
+1. No es recursión estructural ya que al hacer ell lamado recursivo utiliza `tail xs`, descartando elementos de la cola entera, `xs`.
+
+```hs
+entrelazar :: [a] -> [a] -> [a]
+entrelazar [] = id
+entrelazar (x:xs) =
+    \ys -> if null ys
+           then x : entrelazar xs []
+           else x : head ys : entrelazar xs (tail ys)
+```
+
+2. Sí es recursión estructural, ya que hace recursión sobre la cola `xs`. Si bien usa `tail ys`, eso no rompe la recursión estructural ya que `ys` no es el argumento estructural de la recursión, si no que es sólo un parámetro que no define casos base ni guía la recursión.
+Hecha con `foldr`:
+- 
+    ```hs
+    entrelazar :: [a] -> [a] -> [a]
+    entrelazar xs ys = foldr
+        (\x acc ys ->
+            if null ys then x : acc []
+            else x : head ys : acc (tail ys)
+        ) id xs ys
+    ```
+
+    ---
+
+### Ejercicio 12
 
 #### Definir las siguientes funciones para trabajar sobre listas, y dar su tipo. Todas ellas deben poder aplicarse a listas finitas e infinitas.
 
@@ -503,9 +577,10 @@ recr f z (x : xs) = f x xs (recr f z xs)
 ---
 
 ## Otras estructuras de datos
+
 > En esta sección se permite (y se espera) el uso de recursión explícita únicamente para la definición de esquemas de recursión.
 
-### Ejercicio 9
+### Ejercicio 14
 
 #### i. Definir y dar el tipo del esquema de recursión `foldNat` sobre los naturales. Utilizar el tipo `Integer` de Haskell (la función va a estar definida sólo para los enteros mayores o iguales que 0).
 
@@ -526,7 +601,7 @@ recr f z (x : xs) = f x xs (recr f z xs)
 
     ---
 
-### Ejercicio 12  
+### Ejercicio 17 
 
 Considerar el siguiente tipo, que representa a los árboles binarios:  
 - `data AB a = Nil | Bin (AB a) a (AB a)`

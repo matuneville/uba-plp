@@ -4,6 +4,7 @@
 -- i) ---
 
 curry' :: ((a, b) -> c) -> a -> b -> c
+-- curry' f = \x -> \y -> f (x, y)
 curry' f x y = f (x, y)
 
 -- ii) ---
@@ -14,15 +15,14 @@ uncurry' f (x, y) = f x y
 -- las pruebo con max
 
 maxUncurried :: (Int, Int) -> Int
-maxUncurried (x, y) 
-    | x >= y    = x
-    | otherwise = y
+maxUncurried (x, y)
+  | x >= y = x
+  | otherwise = y
 
 maxCurried :: Int -> Int -> Int
-maxCurried x y 
-    | x >= y    = x
-    | otherwise = y
-
+maxCurried x y
+  | x >= y = x
+  | otherwise = y
 
 -- Ejercicio 3 -------------------------
 ----------------------------------------
@@ -37,6 +37,7 @@ elem' x xs = foldr (\y acc -> y == x || acc) False xs
 
 (+++) :: [a] -> [a] -> [a]
 (+++) xs ys = foldr (:) ys xs
+
 -- en cada paso, : agrega el elemento actual al frente del acumulador,
 -- que arranca siendo ys
 
@@ -45,6 +46,7 @@ filter' p xs = foldr (\x acc -> if p x then x : acc else acc) [] xs
 
 map' :: (a -> b) -> [a] -> [b]
 map' f xs = foldr (\x acc -> f x : acc) [] xs
+
 -- en cada paso, : agrega f x, el elemento mapeado, al frente del acumulador,
 -- que arranca siendo vacio
 
@@ -71,10 +73,10 @@ mejorSegun f xs = foldr1 (\x acc -> if f x acc then x else acc) xs
 
 -- iii) ---
 
-sumasParciales :: Num a => [a] -> [a]
+sumasParciales :: (Num a) => [a] -> [a]
 sumasParciales xs = tail (foldl (\acc x -> acc ++ [x + (last acc)]) [0] xs)
 
-sumasParciales' :: Num a => [a] -> [a]
+sumasParciales' :: (Num a) => [a] -> [a]
 sumasParciales' xs = tail (scanl (+) 0 xs)
 
 -- iv) ---
@@ -82,7 +84,7 @@ sumasParciales' xs = tail (scanl (+) 0 xs)
 -- El truco está en ver que:
 --
 -- Dado [2 1 3 4],
--- 2 - 1 + 3 - 4 = 
+-- 2 - 1 + 3 - 4 =
 -- = 2 - 1 + 3 - 4
 -- = 2 - (1 - 3 + 4)
 -- = 2 - (1 - (3 - 4)) = f 2 (f 1 (f 3 4)) = foldr1 f [2 1 3 4],
@@ -94,12 +96,13 @@ sumaAlt xs = foldr1 (-) xs
 -- v) ---
 
 -- Dado [1 2 3 4],
--- (4 - 3 + 2 - 1) = 
+-- (4 - 3 + 2 - 1) =
 -- = 4 - (3 - 2 + 1)
 -- = 4 - (3 - (2 - 1))
 
 sumaAltInversa :: [Int] -> Int
 sumaAltInversa xs = foldl1 (flip (-)) xs
+
 -- con flip (-) hace x-acc en vez de acc-x
 
 -- Ejercicio 5 -------------------------
@@ -110,11 +113,16 @@ sumaAltInversa xs = foldl1 (flip (-)) xs
 -- foldr f z [1,2,3] = f 1 (f 2 (f 3 z))
 
 entrelazar :: [a] -> [a] -> [a]
-entrelazar xs ys = foldr
-    (\x acc ys ->
-        if null ys then x : acc []
-        else x : head ys : acc (tail ys)
-    ) id xs ys
+entrelazar xs ys =
+  foldr
+    ( \x acc ys ->
+        if null ys
+          then x : acc []
+          else x : head ys : acc (tail ys)
+    )
+    id
+    xs
+    ys
 
 -- entrelazar [1,2] [4,5]
 -- = foldr f z [1,2] [4,5]
@@ -131,9 +139,7 @@ entrelazar xs ys = foldr
 -- pero necesito información extra que no viene en foldr,
 -- no puedo “guardarla” en una lista... pero sí en una función
 -- z = \ys -> ys
--- = (f 1 (f 2 z)) 
-
-
+-- = (f 1 (f 2 z))
 
 -- Ejercicio 6 -------------------------
 ----------------------------------------
@@ -142,11 +148,11 @@ recr :: (a -> [a] -> b -> b) -> b -> [a] -> b
 recr _ z [] = z
 recr f z (x : xs) = f x xs (recr f z xs)
 
-sacarUna :: Eq a => a -> [a] -> [a]
+sacarUna :: (Eq a) => a -> [a] -> [a]
 sacarUna _ [] = []
-sacarUna a (x:xs)
-    | a == x = xs
-    | otherwise = x : sacarUna a xs
+sacarUna a (x : xs)
+  | a == x = xs
+  | otherwise = x : sacarUna a xs
 
 -- quiero resolverlo con recr
 -- sacarUna 3 [1,3,2,3] = recr f z [1,3,2,3]
@@ -169,21 +175,21 @@ sacarUna a (x:xs)
 --      si x == 3 -> lo quiero borrar -> devuelvo xs (no uso el rec acumulado)
 --      si x != 3 -> no lo quiero borrar -> reconstruyo con x : rec
 
-sacarUna' :: Eq a => a -> [a] -> [a]
+sacarUna' :: (Eq a) => a -> [a] -> [a]
 sacarUna' a xs = recr f z xs
-    where
-        z = []
-        f x xs rec
-            | x == a = xs
-            | otherwise = x : rec
+  where
+    z = []
+    f x xs rec
+      | x == a = xs
+      | otherwise = x : rec
 
 -- c) ---
 
-insertarOrdenado :: Ord a => a -> [a] -> [a]
+insertarOrdenado :: (Ord a) => a -> [a] -> [a]
 insertarOrdenado a [] = [a]
-insertarOrdenado a (x:xs)
-    | a < x = a : (x:xs)
-    | otherwise = x : insertarOrdenado a xs
+insertarOrdenado a (x : xs)
+  | a < x = a : (x : xs)
+  | otherwise = x : insertarOrdenado a xs
 
 -- recr _ z [] = z
 -- recr f z (x : xs) = f x xs (recr f z xs)
@@ -217,36 +223,36 @@ insertarOrdenado a (x:xs)
 -- = f 0 [2,4,5] [1,2,4,5]
 -- 1 /< x=0 -> uso rec=[1,2,4,5] y no xs -> 0:rec = 0:[1,2,4,5] = [0,1,2,4,5]
 
--- entonces f lo que hace es 
+-- entonces f lo que hace es
 -- si a < x -> devuelvo a:x:xs
 -- si no -> devuelvo x:rec
 -- el caso base z sería [a], se ve a ojo
 -- luego llamo 'insertar' a f, queda un poco mejor
 
-insertarOrdenado' :: Ord a => a -> [a] -> [a]
+insertarOrdenado' :: (Ord a) => a -> [a] -> [a]
 insertarOrdenado' a ys = recr insertar z ys
-    where
-        z = [a]
-        insertar x xs acc
-            | a < x = a:x:xs
-            | otherwise = x:acc
+  where
+    z = [a]
+    insertar x xs acc
+      | a < x = a : x : xs
+      | otherwise = x : acc
 
 -- Ejercicio 7 -------------------------
 ----------------------------------------
 
 -- i) ----
-mapPares :: (a -> b -> c) -> [(a,b)] -> [c]
-mapPares _ []     = []
-mapPares f (p:ps) = uncurry f p : mapPares f ps
+mapPares :: (a -> b -> c) -> [(a, b)] -> [c]
+mapPares _ [] = []
+mapPares f (p : ps) = uncurry f p : mapPares f ps
 
-mapPares' :: (a -> b -> c) -> [(a,b)] -> [c]
+mapPares' :: (a -> b -> c) -> [(a, b)] -> [c]
 mapPares' f ps = map (uncurry f) ps
 
 -- ii) ----
-armarPares :: [a] -> [b] -> [(a,b)]
-armarPares _ []          = []
-armarPares [] _          = []
-armarPares (x:xs) (y:ys) = (x,y) : armarPares xs ys
+armarPares :: [a] -> [b] -> [(a, b)]
+armarPares _ [] = []
+armarPares [] _ = []
+armarPares (x : xs) (y : ys) = (x, y) : armarPares xs ys
 
 -- armarPares [1,2,3] [4,5,6] =
 -- = (foldr f funciónVacía [1,2,3]) [4,5,6]
@@ -286,26 +292,25 @@ armarPares (x:xs) (y:ys) = (x,y) : armarPares xs ys
 -- f 1 acc [4,5,6] = (1,4) : [(2,5), (3,6)]
 -- = [(1,4), (2,5), (3,6)]
 
-
 armarPares2 :: [a] -> [b] -> [(a, b)]
-armarPares2 = foldr (
-    \x acc ys ->
+armarPares2 =
+  foldr
+    ( \x acc ys ->
         if null ys
-            then []
-        else
+          then []
+          else
             (x, head ys) : acc (tail ys)
-    ) (const [])
+    )
+    (const [])
 
-
-armarPares' :: [a] -> [b] -> [(a,b)]
+armarPares' :: [a] -> [b] -> [(a, b)]
 armarPares' = zip
 
 -- iii) ----
 mapDoble :: (a -> b -> c) -> [a] -> [b] -> [c]
-mapDoble _ [] _          = []
-mapDoble _ _ []          = []
-mapDoble f (x:xs) (y:ys) = f x y : mapDoble f xs ys
-
+mapDoble _ [] _ = []
+mapDoble _ _ [] = []
+mapDoble f (x : xs) (y : ys) = f x y : mapDoble f xs ys
 
 -- Ejercicio 9 -------------------------
 ----------------------------------------
@@ -326,13 +331,13 @@ mapDoble f (x:xs) (y:ys) = f x y : mapDoble f xs ys
 
 foldNat :: (Int -> b -> b) -> b -> Int -> b
 foldNat _ z 0 = z
-foldNat f z n = f n (foldNat f z (n-1))
+foldNat f z n = f n (foldNat f z (n - 1))
 
 -- ii) ----
 
 potencia :: Int -> Int -> Int
 potencia a 0 = 1
-potencia a b = a *  (potencia a (b-1))
+potencia a b = a * (potencia a (b - 1))
 
 potencia' :: Int -> Int -> Int
 potencia' a b = foldNat (\x acc -> a * acc) 1 b
@@ -344,7 +349,7 @@ data AB a = Nil | Bin (AB a) a (AB a)
 
 -- args en orden:
 --  - caso base (Nil) :: b
---  - funcion caso Bin :: 
+--  - funcion caso Bin ::
 --      - resIzq    :: b, pues fue procesador por fold
 --      - x         :: a, tipo del valor de nodo
 --      - resDer    :: b, pues fue procesador por fold
@@ -352,12 +357,12 @@ data AB a = Nil | Bin (AB a) a (AB a)
 --  - árbol a procesar :: AB a
 
 foldAB :: b -> (b -> a -> b -> b) -> AB a -> b
-foldAB casoBase _ Nil                   = casoBase
+foldAB casoBase _ Nil = casoBase
 foldAB casoBase fBin (Bin izq raiz der) =
-    fBin
-        (foldAB casoBase fBin izq)
-        raiz
-        (foldAB casoBase fBin der)
+  fBin
+    (foldAB casoBase fBin izq)
+    raiz
+    (foldAB casoBase fBin der)
 
 -- tests de foldAB
 size :: AB Int -> Int
@@ -369,7 +374,7 @@ suma arbol = foldAB 0 (\sizeIzq raiz sizeDer -> raiz + sizeIzq + sizeDer) arbol
 -- recAB igual que foldAB pero recibiendo también los subárboles originales
 -- args en orden:
 --  - caso base (Nil) :: b
---  - funcion caso Bin :: 
+--  - funcion caso Bin ::
 --      - izq       :: a, tipo del subarbol izquierdo
 --      - resIzq    :: b, pues fue procesador por fold
 --      - x         :: a, tipo del valor de nodo
@@ -379,29 +384,29 @@ suma arbol = foldAB 0 (\sizeIzq raiz sizeDer -> raiz + sizeIzq + sizeDer) arbol
 --  - árbol a procesar :: AB a
 
 recAB :: b -> (AB a -> b -> a -> AB a -> b -> b) -> AB a -> b
-recAB casoBase _ Nil                   = casoBase
-recAB casoBase fBin (Bin izq raiz der) = 
-    fBin
-        izq
-        (recAB casoBase fBin izq)
-        raiz
-        der
-        (recAB casoBase fBin der)
+recAB casoBase _ Nil = casoBase
+recAB casoBase fBin (Bin izq raiz der) =
+  fBin
+    izq
+    (recAB casoBase fBin izq)
+    raiz
+    der
+    (recAB casoBase fBin der)
 
 -- ii) ----
 esNil :: AB a -> Bool
 esNil Nil = True
-esNil _   = False
+esNil _ = False
 
 altura :: AB a -> Int
 altura = foldAB 0 fMaxAltSub
-    where
-        fMaxAltSub = (\altIzq _ altDer -> 1 + max altIzq altDer)
+  where
+    fMaxAltSub = (\altIzq _ altDer -> 1 + max altIzq altDer)
 
 cantNodos :: AB Int -> Int
 cantNodos = foldAB 0 fCantSubnodos
-    where
-        fCantSubnodos = (\sizeIzq _ sizeDer -> 1 + sizeIzq + sizeDer)
+  where
+    fCantSubnodos = (\sizeIzq _ sizeDer -> 1 + sizeIzq + sizeDer)
 
 -- iii) ----
 
@@ -412,17 +417,16 @@ cantNodos = foldAB 0 fCantSubnodos
 --     el valor actual x
 --     con el mejor entre los hijos
 mejorSegunAB :: (a -> a -> Bool) -> AB a -> a
-mejorSegunAB _ Nil                = error "No hay mejor en árbol vacío"
+mejorSegunAB _ Nil = error "No hay mejor en árbol vacío"
 mejorSegunAB f (Bin izq raiz der) = foldAB raiz fBin (Bin izq raiz der)
-    where
-        fBin mejorIzq x mejorDer =
-            if f x mejorHijo
-                then x
-            else
-                mejorHijo
-            where
-                mejorHijo = if f mejorIzq mejorDer then mejorIzq else mejorDer
-
+  where
+    fBin mejorIzq x mejorDer =
+      if f x mejorHijo
+        then x
+        else
+          mejorHijo
+      where
+        mejorHijo = if f mejorIzq mejorDer then mejorIzq else mejorDer
 
 -- iv) ----
 -- En cada nodo verificar:
@@ -444,11 +448,82 @@ mejorSegunAB f (Bin izq raiz der) = foldAB raiz fBin (Bin izq raiz der)
 
 -- recAB :: b -> (AB a -> b -> a -> AB a -> b -> b) -> AB a -> b
 
-esABB :: Ord a => AB a -> Bool
-esABB Nil                = True
+esABB :: (Ord a) => AB a -> Bool
+esABB Nil = True
 esABB (Bin izq raiz der) = recAB True fBin (Bin izq raiz der)
-    where
-        fBin izq resIzq x der resDer =
-            resIzq && resDer &&
-            (esNil izq || (mejorSegunAB (>) izq) <= x) && -- el mayor de izq es menor que raiz
-            (esNil der || (mejorSegunAB (<) der) > x) -- el menor de der es mayor que raiz
+  where
+    fBin izq resIzq x der resDer =
+      resIzq
+        && resDer
+        && (esNil izq || (mejorSegunAB (>) izq) <= x)
+        && (esNil der || (mejorSegunAB (<) der) > x) -- el mayor de izq es menor que raiz
+        -- el menor de der es mayor que raiz
+
+-- --------------------------------------------------------
+-- NUEVA GUIA ACTUALIZADA 2026 c2 -- Ejercicios nuevos !!
+-- --------------------------------------------------------
+
+paresDeNat :: [(Int, Int)]
+paresDeNat = [(x, y) | s <- [0 ..], x <- [0 .. s], let y = s - x]
+
+-- Ej 8
+
+palabrasCortas :: [String] -> [String]
+palabrasCortas = filter esCorta
+  where
+    esCorta = \s -> length s < 5
+
+notasAprobadas :: [Int] -> [Bool]
+notasAprobadas = map esAprobada
+  where
+    esAprobada = \n -> n >= 6
+
+numerosParesAlCuadrado :: [Int] -> [Int]
+numerosParesAlCuadrado = map alCuadrado . filter esPar
+  where
+    -- numerosParesAlCuadrado xs = map alCuadrado $ filter esPar xs
+    -- numerosParesAlCuadrado xs = map alCuadrado (filter esPar xs)
+
+    esPar = \n -> n `mod` 2 == 0
+    alCuadrado = \n -> n * n
+
+-- ejercicio de clase
+--
+-- Recursion Estructural
+
+take' :: [a] -> Int -> [a]
+take' [] = const []
+take' (x : xs) = \n -> if n == 0 then [] else x : rec (n - 1)
+  where
+    rec = take' xs
+
+take'' :: [a] -> Int -> [a]
+take'' =
+  foldr
+    (\x rec -> \n -> if n == 0 then [] else x : rec (n - 1))
+    (const [])
+
+-- take'' [10, 20, 30] 2
+-- = (foldr (\x rec n -> if n == 0 then [] else x : rec (n - 1)) (const []) [10, 20, 30]) 2
+-- = (\n -> if n == 0 then [] else 10 : (f 20 (f 30 z)) (n - 1)) 2
+-- = if 2 == 0 then [] else 10 : (f 20 (f 30 z)) (2 - 1)
+-- = 10 : (f 20 (f 30 z)) 1
+-- = 10 : (\n -> if n == 0 then [] else 20 : (f 30 z) (n - 1)) 1
+-- = 10 : (if 1 == 0 then [] else 20 : (f 30 z) (1 - 1))
+-- = 10 : 20 : (f 30 z) 0
+-- = 10 : 20 : (\n -> if n == 0 then [] else 30 : z (n - 1)) 0
+-- = 10 : 20 : (if 0 == 0 then [] else 30 : z (0 - 1))
+-- = 10 : 20 : []
+-- = [10, 20]
+
+--
+-- Recursion Primitiva
+
+sacarElem :: (Eq a) => a -> [a] -> [a]
+sacarElem _ [] = []
+sacarElem y (x : xs) = if x == y then xs else x : rec
+  where
+    rec = sacarElem y xs
+
+sacarElem' :: (Eq a) => a -> [a] -> [a]
+sacarElem' y = recr (\x xs rec -> if x == y then xs else x : rec) []
