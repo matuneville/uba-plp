@@ -382,6 +382,15 @@ Definir en Haskell una lista que contenga todas las listas finitas de enteros po
 > f (x:xs) = ... f xs ...
 > ```
 >
+> Se resuelven con `foldr`:
+>
+> ```hs
+> foldr :: (a -> b -> b) -> b -> [a] -> b
+> foldr f z []     = z
+> foldr f z (x:xs) = f x (foldr f z xs)
+> ```
+>
+>
 > #### 2. Recursión primitiva
 > Caso especial de estructural donde además de la cola `xs`, se tiene acceso al **resultado de la llamada recursiva**. Es la que modela `foldr`.
 >
@@ -389,6 +398,14 @@ Definir en Haskell una lista que contenga todas las listas finitas de enteros po
 > -- primitiva: usa xs y también el resultado recursivo
 > f [] = ...
 > f (x:xs) = ... x ... (f xs) ...
+> ```
+>
+> Se resuelven con `recr`:
+>
+> ```hs
+> recr :: (a -> [a] -> b -> b) -> b -> [a] -> b
+> recr _ z []       = z
+> recr f z (x : xs) = f x xs (recr f z xs)
 > ```
 >
 > #### 3. Recursión global (general)
@@ -421,27 +438,6 @@ recr f z (x : xs) = f x xs (recr f z xs)
     ```
 - Usando `recr`:
     ```hs
-    -- quiero resolverlo con recr
-    -- sacarUna 3 [1,3,2,3] = recr f z [1,3,2,3]
-    -- = f 1 [3,2,3] (recr f z [3,2,3])
-    -- = f 1 [3,2,3] (f 3 [2,3] (recr f z [2,3]))
-    -- = f 1 [3,2,3] (f 3 [2,3] (f 2 [3] (recr f z [3])))
-    -- = f 1 [3,2,3] (f 3 [2,3] (f 2 [3] (f 3 [] (recr f z [] ))))
-    -- = f 1 [3,2,3] (f 3 [2,3] (f 2 [3] (f 3 [] z)))
-    -- x=3, lo quiero descartar, devuelvo solo xs=[]
-    -- = f 1 [3,2,3] (f 3 [2,3] (f 2 [3] [] ))
-    -- x=2, no lo quiero descartar, reconstruyo rec=[2]
-    -- = f 1 [3,2,3] (f 3 [2,3] [2] )
-    -- de nuevo, x=3, lo quiero descartar, devuelvo directamete xs=[2,3]
-    -- = f 1 [3,2,3] [2,3]
-    -- x=1, no lo quiero descartar, reconstruyo rec=[1,2,3]
-    -- [1,2,3]
-
-    -- entonces f hace lo siguiente...
-    -- dado f x xs rec
-    --      si x == 3 -> lo quiero borrar -> devuelvo xs (no uso el rec acumulado)
-    --      si x != 3 -> no lo quiero borrar -> reconstruyo con x : rec
-
     sacarUna' :: Eq a => a -> [a] -> [a]
     sacarUna' a xs = recr f z xs
         where
@@ -480,39 +476,71 @@ recr f z (x : xs) = f x xs (recr f z xs)
 
 ### Ejercicio 11
 
-#### Indicar si la recursión utilizada en cada una de ellas es o no estructural. Si lo es, reescribirla utilizando `foldr`. En caso contrario, explicar el motivo.
+#### Indicar qué tipo de recursión se utiliza en cada una de las siguientes definiciones. Para los esquemas estructural y primitivo reescribir utilizando `recr` y `foldr`.
 
-```hs
-elementosEnPosicionesPares :: [a] -> [a]
-elementosEnPosicionesPares [] = []
-elementosEnPosicionesPares (x:xs) =
-    if null xs
-    then [x]
-    else x : elementosEnPosicionesPares (tail xs)
-```
+1. 
+    ```hs
+    elementosEnPosicionesPares :: [a] -> [a]
+    elementosEnPosicionesPares [] = []
+    elementosEnPosicionesPares (x:xs) =
+        if null xs
+        then [x]
+        else x : elementosEnPosicionesPares (tail xs)
+    ```
 
-1. No es recursión estructural ya que al hacer ell lamado recursivo utiliza `tail xs`, descartando elementos de la cola entera, `xs`.
+No es recursión estructural ni primitiva ya que al hacer ell lamado recursivo utiliza `tail xs`, descartando elementos de la cola entera, `xs`. Por esta modificación de la estructura original, decimos que es global.
 
-```hs
-entrelazar :: [a] -> [a] -> [a]
-entrelazar [] = id
-entrelazar (x:xs) =
-    \ys -> if null ys
-           then x : entrelazar xs []
-           else x : head ys : entrelazar xs (tail ys)
-```
-
-2. Sí es recursión estructural, ya que hace recursión sobre la cola `xs`. Si bien usa `tail ys`, eso no rompe la recursión estructural ya que `ys` no es el argumento estructural de la recursión, si no que es sólo un parámetro que no define casos base ni guía la recursión.
-Hecha con `foldr`:
-- 
+2. 
     ```hs
     entrelazar :: [a] -> [a] -> [a]
-    entrelazar xs ys = foldr
-        (\x acc ys ->
-            if null ys then x : acc []
-            else x : head ys : acc (tail ys)
-        ) id xs ys
+    entrelazar [] = id
+    entrelazar (x:xs) =
+        \ys -> if null ys
+            then x : entrelazar xs []
+            else x : head ys : entrelazar xs (tail ys)
     ```
+
+Sí es recursión estructural, ya que hace recursión sobre la cola `xs`. Si bien usa `tail ys`, eso no rompe la recursión estructural ya que `ys` no es el argumento estructural de la recursión, si no que es sólo un parámetro que no define casos base ni guía la recursión.
+Hecha con `foldr`:
+
+- 
+    ```hs
+    entrelazar' :: [a] -> [a] -> [a]
+    entrelazar' =
+        foldr
+            (\x rec -> \ys -> if (null ys) then (x : rec []) else (x : head ys : rec (tail ys)))
+            id
+    ```
+
+3. 
+    ```hs
+    slowSort :: Ord a => [a] -> [a]
+    slowSort [] = []
+    slowSort (p:xs) = slowSort menores ++ [p] ++ slowSort mayores
+        where
+            menores = [x | x <- xs, x <= p]
+            mayores = [x | x <- xs, x > p]
+    ```
+
+Es global, ya que esta modificando la estructura original en el llamado recursivo al usar `mayores` y `menores`.
+
+4. 
+    ```hs
+    sufijos :: [a] -> [[a]]
+    sufijos [] = [[]]
+    sufijos (x:xs) = (x:xs) : sufijos xs
+    ``` 
+
+Es primitiva ya que hace uso de la cola xs. Con recr:
+
+- 
+    ```hs
+    sufijos' :: [a] -> [[a]]
+    sufijos' = recr (\x xs rec -> (x : xs) : rec) [[]]
+    -- sufijos = foldr (\x rec -> (x : head rec) : rec) [[]]
+    ````
+
+
 
     ---
 
@@ -524,17 +552,19 @@ Hecha con `foldr`:
 
 -
     ```hs
-    mapPares :: (a -> b -> c) -> [(a,b)] -> [c]
-    mapPares _ []     = []
-    mapPares f (p:ps) = uncurry f p : mapPares f ps
+    mapPares :: (a -> b -> c) -> [(a, b)] -> [c]
+    mapPares _ [] = []
+    mapPares f (x : xs) = uncurry f x : rec
+    where
+        rec = mapPares f xs
 
-    mapPares' :: (a -> b -> c) -> [(a,b)] -> [c]
-    mapPares' f ps = map (uncurry f) ps
+    mapPares' :: (a -> b -> c) -> [(a, b)] -> [c]
+    mapPares' f = foldr (\x rec -> uncurry f x : rec) []
     ```
     - Funciona bien en listas infinitas:
         ```hs
-        ghci> take 5 (mapPares (*) (zip [1..] [5..]))
-        [5,12,21,32,45]
+        take 5 $ mapPares' (+) [(x,y) | x <- [1..], y <- [3..]]
+        [4,5,6,7,8]
         ```
 
 #### ii. `armarPares`, que dadas dos listas arma una lista de pares que contiene, en cada posición, el elemento correspondiente a esa posición en cada una de las listas. Si una de las listas es más larga que la otra, ignorar los elementos que sobran (el resultado tendrá la longitud de la lista más corta). Esta función en Haskell se llama `zip`. Pista: aprovechar la currificación y utilizar evaluación parcial.
@@ -542,35 +572,29 @@ Hecha con `foldr`:
 
 -
     ```hs
-    armarPares :: [a] -> [b] -> [(a,b)]
-    armarPares _ []          = []
-    armarPares [] _          = []
-    armarPares (x:xs) (y:ys) = (x,y) : armarPares xs ys
+    armarPares :: [a] -> [b] -> [(a, b)]
+    armarPares [] = const []
+    armarPares (x : xs) = \ys -> if null ys then [] else (x, head ys) : rec (tail ys)
+    where
+        rec = armarPares xs
 
-    armarPares2 :: [a] -> [b] -> [(a, b)]
-    armarPares2 = foldr (
-        \x acc ys ->
-            if null ys
-                then []
-            else
-                (x, head ys) : acc (tail ys)
-        ) (const [])
+    armarPares' :: [a] -> [b] -> [(a, b)]
+    armarPares' =
+    foldr
+        (\x rec -> \ys -> if null ys then [] else (x, head ys) : rec (tail ys))
+        (const [])
     ```
 
     - Funciona bien en listas infinitas:
         ```hs
-        ghci> take 5 (armarPares [1..] [5..])
-        [(1,5),(2,6),(3,7),(4,8),(5,9)]
+        ghci> take 5 $ armarPares' [1..] [3..]
+        [(1,3),(2,4),(3,5),(4,6),(5,7)]
         ```
 
 #### iii. `mapDoble`, una variante de `mapPares`, que toma una función currificada de dos argumentos y dos listas (de igual longitud), y devuelve una lista de aplicaciones de la función a cada elemento correspondiente de las dos listas. Esta función en Haskell se llama `zipWith`.
 
 - 
     ```hs
-    mapDoble :: (a -> b -> c) -> [a] -> [b] -> [c]
-    mapDoble _ [] _          = []
-    mapDoble _ _ []          = []
-    mapDoble f (x:xs) (y:ys) = f x y : mapDoble f xs ys
     ```
 
 ---
@@ -595,8 +619,14 @@ Hecha con `foldr`:
 
 - 
     ```hs
+    potencia :: Int -> Int -> Int
+    potencia a 0 = 1
+    potencia a b = a * rec
+    where
+        rec = potencia a (b - 1)
+
     potencia' :: Int -> Int -> Int
-    potencia' a b = foldNat (\x acc -> a * acc) 1 b
+    potencia' a = foldNat (\n rec -> a * rec) 1
     ```
 
     ---
@@ -610,97 +640,64 @@ Considerar el siguiente tipo, que representa a los árboles binarios:
 
 - 
     ```hs
-    -- args en orden:
-    --  - caso base (Nil) :: b
-    --  - funcion caso Bin :: 
-    --      - resIzq    :: b, pues fue procesador por fold
-    --      - x         :: a, tipo del valor de nodo
-    --      - resDer    :: b, pues fue procesador por fold
-    --      - resultado :: b
-    --  - árbol a procesar :: AB a
-
+    {-
+    recibe:
+        - funcion caso Nil (caso base)
+        - funcion caso SubArbol (caso recursivo) que recibe:
+            - resultado recursivo sobre subarbol izquierdo
+            - valor nodo
+            - resultado recursivo sobre subarbol derecho
+        - Arbol
+    -}
     foldAB :: b -> (b -> a -> b -> b) -> AB a -> b
-    foldAB casoBase _ Nil                   = casoBase
-    foldAB casoBase fBin (Bin izq raiz der) =
-        fBin
-            (foldAB casoBase fBin izq)
-            raiz
-            (foldAB casoBase fBin der)
+    foldAB fNil fSubAb ab = case ab of
+    Nil -> fNil
+    Bin izq n der -> fSubAb recIzq n recDer
+        where
+        recIzq = foldAB fNil fSubAb izq
+        recDer = foldAB fNil fSubAb der
     ```
 
 - 
     ```hs
-    -- recAB igual que foldAB pero recibiendo también los subárboles originales
-    -- args en orden:
-    --  - caso base (Nil) :: b
-    --  - funcion caso Bin :: 
-    --      - izq       :: a, tipo del subarbol izquierdo
-    --      - resIzq    :: b, pues fue procesador por fold
-    --      - x         :: a, tipo del valor de nodo
-    --      - der       :: a, tipo del subarbol derecho
-    --      - resDer    :: b, pues fue procesador por fold
-    --      - resultado :: b
-    --  - árbol a procesar :: AB a
-
-    recAB :: b -> (AB a -> b -> a -> AB a -> b -> b) -> AB a -> b
-    recAB casoBase _ Nil                   = casoBase
-    recAB casoBase fBin (Bin izq raiz der) = 
-        fBin
-            izq
-            (recAB casoBase fBin izq)
-            raiz
-            der
-            (recAB casoBase fBin der)
+    {-
+    recibe:
+        - funcion caso Nil (caso base)
+        - funcion caso SubArbol (caso recursivo) que recibe:
+            - subarbol izquierdo
+            - subarbol derecho
+            - resultado recursivo sobre subarbol izquierdo
+            - valor nodo
+            - resultado recursivo sobre subarbol derecho
+        - Arbol
+    -}
+    recAB :: b -> (AB a -> AB a -> b -> a -> b -> b) -> AB a -> b
+    recAB fNil fSubAb ab = case ab of
+    Nil -> fNil
+    Bin izq n der -> fSubAb izq der recIzq n recDer
+        where
+        recIzq = recAB fNil fSubAb izq
+        recDer = recAB fNil fSubAb der
     ```
 
 #### ii. Definir las funciones `esNil`, `altura` y `cantNodos` (para `esNil` puede utilizarse `case` en lugar de `foldAB` o `recAB`).
 
 - 
     ```hs
-    esNil :: AB a -> Bool
-    esNil Nil = True
-    esNil _   = False
-
-    altura :: AB a -> Int
-    altura = foldAB 0 fMaxAltSub
-        where
-            fMaxAltSub = (\altIzq _ altDer -> 1 + max altIzq altDer)
-
-    cantNodos :: AB Int -> Int
-    cantNodos = foldAB 0 fCantSubnodos
-        where
-            fCantSubnodos = (\sizeIzq _ sizeDer -> 1 + sizeIzq + sizeDer)
     ```
 
 #### iii. Definir la función `mejorSegún :: (a -> a -> Bool) -> AB a -> a`, análoga a la del ejercicio 3, para árboles. Se recomienda definir una función auxiliar para comparar la raíz con un posible resultado de la recursión para un árbol que puede o no ser Nil.
 
 - 
     ```hs
-    mejorSegunAB :: (a -> a -> Bool) -> AB a -> a
-    mejorSegunAB _ Nil                = error "No hay mejor en árbol vacío"
-    mejorSegunAB f (Bin izq raiz der) = foldAB raiz fBin (Bin izq raiz der)
-        where
-            fBin mejorIzq x mejorDer =
-                if f x mejorHijo
-                    then x
-                else
-                    mejorHijo
-                where
-                    mejorHijo = if f mejorIzq mejorDer then mejorIzq else mejorDer
+    
     ```
 
 #### iv. Definir la función `esABB :: Ord a => AB a -> Bool` que chequea si un árbol es un árbol binario de búsqueda. Recordar que, en un árbol binario de búsqueda, el valor de un nodo es mayor o igual que los valores que aparecen en el subárbol izquierdo y es estrictamente menor que los valores que aparecen en el subárbol derecho.
 
 - 
     ```hs
-    esABB :: Ord a => AB a -> Bool
-    esABB Nil                = True
-    esABB (Bin izq raiz der) = recAB True fBin (Bin izq raiz der)
-        where
-            fBin izq resIzq x der resDer =
-                resIzq && resDer &&
-                (esNil izq || (mejorSegunAB (>) izq) <= x) && -- el mayor de izq es menor que raiz
-                (esNil der || (mejorSegunAB (<) der) > x) -- el menor de der es mayor que raiz
+    
     ```
 
 #### v. Justificar la elección de los esquemas de recursión utilizados para los tres puntos anteriores.
