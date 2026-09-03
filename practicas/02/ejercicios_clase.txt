@@ -1,0 +1,92 @@
+--- 0.4 ----
+------------
+Demostrar ∀x :: a. ∀y :: Bool
+esPar y ⇒ maximo x y = y
+
+{eP} ∀x. esPar x = x
+{mc} ∀y. maximo y = \x -> True
+
+maximo x y 
+{mc} = (\x -> True) y
+{β}  = True
+Entonces
+{max} maximo x y = True
+
+Caso y = True {
+    esPar True ⇒ maximo x True = True
+    {eP}  = True ⇒ maximo x True = True
+    {max} = True ⇒ True = True
+    {=}   = True ⇒ True
+    ✅
+}
+
+Caso y = False {
+    esPar False ⇒ maximo x False = False
+    {eP}  = False ⇒ maximo x False = False
+    {max} = False ⇒ True = False
+    {=}   = False ⇒ False
+    ✅
+}
+
+
+--- 1 ---
+---------
+Demostrar
+curry . uncurry = id 
+
+∀ f :: a -> b -> c.
+
+curry . uncurry
+{EXT} // lema de extensionalidad: lo desmuestro para todos sus argumentos
+
+        (curry . uncurry) f 
+{CMP} = curry (uncurry f)
+{U}   = curry ((\(x, y) -> f x y))
+{C}   = (\w z -> (\(x, y) -> f x y) (w, z))
+
+{EXT x2}
+∀a :: a. ∀b :: b
+
+      (\w z -> (\(x, y) -> f x y) (w, z)) a b
+{β} = (\(x, y) -> f x y) (a, b)
+{β} = f a b
+    = *1
+
+       id f a b
+     = (id f) a b
+{id} = f a b
+    = *1
+
+Luego,
+curry . uncurry = id 
+
+QED ∎
+
+
+--- 2 ---
+---------
+
+Demostrar
+
+∀ p,q ::  Either (Int, Int) Int
+prod p q = prod q p
+
+{EXT} ∀ p,q
+QVQ
+prod p q = prod q p
+
+o bien
+
+Caso 1:
+Lema de generación
+∃x :: (Int, Int). p = Left x
+∃y :: (Int, Int). p = Left y
+prod (Left x) (Left y) = prod (Left y) (Left x)
+
+Lema de generación
+∃x1,x2 :: Int. x = (x1, x2)
+∃y1,y2 :: Int. y = (y1, y2)
+
+prod (Left (x1, x2)) (Left (y1, y2)) = prod (Left (y1, y2)) (Left (x1, x2))
+{} =
+{} =... TODO

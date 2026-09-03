@@ -35,6 +35,10 @@ Demostrar las siguientes igualdades usando los lemas de generación cuando sea n
 
 > - **Lema de Generación de Pares:**  
 > Dado p::(a,b), siempre podemos decir que ∃x::a, ∃y::b tales que p=(x,y)
+>
+> ---
+>
+> - Vamos a demostrar todo eso siguiendo el Principio de Extensionalidad: si ambos lados de la igualdad son iguales, entonces ambas funciones son iguales
 
 1. 
     ```hs
@@ -43,10 +47,13 @@ Demostrar las siguientes igualdades usando los lemas de generación cuando sea n
     -- Lema de Generación de Pares:         {GP}
     -- dado p::(a,b) ⇒ ∃x::a, ∃y::b. p=(x,y)
 
+    QVQ:
+    intercambiar (intercambiar (x,y)) = (x,y)
+
     intercambiar (intercambiar (x,y))
     {I}  = intercambiar (y,x)
     {I}  = (x,y)
-    {GP} = p
+    ∎
     ```
 
 2. 
@@ -55,12 +62,15 @@ Demostrar las siguientes igualdades usando los lemas de generación cuando sea n
 
     -- Lema de Generación de Pares:         {GP}
     -- dado p::(a,(b,c)) ⇒ ∃x::a, ∃z::(b,c), ∃z1::b, ∃z2::c
-    -- p=(x,z)
+    -- p=(x,z)=(x,(z1,z2))
 
-    asociarD (asociarI (x,(y,z)))
-    {AI} = asociarD ((x,y),z)
-    {AD} = (x,(y,z))
-    {GP} = p
+    QVQ:
+    asociarD (asociarI (x,(z1,z2))) = (x,(z1,z2))
+
+    asociarD (asociarI (x,(z1,z2))) =
+    {AI} = asociarD ((x,z1),z2)
+    {AD} = (x,(z1,z2))
+    ∎
     ```
 
 > - **Lema de generación para sumas**  
@@ -93,9 +103,9 @@ Demostrar las siguientes igualdades usando los lemas de generación cuando sea n
 4. 
     ```hs
     ∀ f::a->b->c . ∀ x::a . ∀ y::b . flip (flip f) x y = f x y
-    
+
     flip (flip f) x y
-    {F} = (flip f) y x
+    {F} = flip f y x
     {F} = f x y
     ```
 
@@ -138,7 +148,9 @@ Demostrar las siguientes igualdades utilizando el principio de extensionalidad f
     {COMP} = flip (flip (f x y))
     {F}    = flip f y x
     {F}    = f x y
-    {ID}   = id f x y
+
+    id f x y
+    {ID}   = f x y
 
     -- Vale para todo x y, luego por {EF} vale: id f = flip (flip f)
     ````
@@ -223,24 +235,28 @@ Demostrar las siguientes propiedades:
     length (duplicar [])
     {D0} = length []
     {L0} = 0
-         = 2 * 0
-    {L0} = 2 * length [] -- ✓
+         = 2 * length []
+    {L0} = 2 * 0
+         = 0 -- ✓
 
     -- Paso inductivo: ------
 
     -- Hipótesis inductiva:
-    -- P(xs) = length (duplicar xs) = 2 * length xs
+    -- vale P(xs) = length (duplicar xs) = 2 * length xs
 
-    -- ∀x::a. ∀xs::[a]. Usando P(xs) como HI, QVQ vale P(x:xs).
+    -- ∀x::a. ∀xs::[a]. Usando P(xs) como HI,
+    -- QVQ vale P(x:xs).
     -- P(x:xs): length (duplicar (x:xs)) = 2 * length (x:xs)
+    
     length (duplicar (x:xs))
     {D1} = length (x : x : duplicar xs)
     {L1} = 1 + length (x : duplicar xs)
     {L1} = 1 + 1 + length (duplicar xs)
-    {HI} = 1 + 1 + 2 * length xs
-         = 2 + 2 * length xs
+         = 2 + length (duplicar xs)
+    {HI} = 2 + 2 * length xs 
          = 2 * (1 + length xs)
-    {L1} = 2 * length (x:xs) -- ✓
+         = 2 * length (x:xs)
+    {L1} = 2 * (1 + length xs) -- ✓
     -- QED
     ```
 
@@ -284,7 +300,7 @@ Demostrar las siguientes propiedades:
     ```hs
     ∀ xs::[a] . xs ++ [] = xs
 
-    -- de vuelta... má' de lo mismo
+    -- de vuelta... más de lo mismo
     ```
 
 5. 
