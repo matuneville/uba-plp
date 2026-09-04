@@ -499,3 +499,141 @@ Demostrar las siguientes propiedades:
     ```  
 
 _Nota: en adelante, siempre que se necesite usar reverse, se podrá utilizar cualquiera de las dos definiciones, según se considere conveniente._
+
+### Ejercicio 7
+
+Dadas las siguientes funciones:
+
+```hs
+nub :: Eq a => [a] -> [a]
+{N0} nub [] = []
+{N1} nub (x:xs) = x : filter (\y -> x /= y) (nub xs)
+
+union :: Eq a => [a] -> [a] -> [a]
+{U0} union xs ys = nub (xs++ys)
+
+intersect :: Eq a => [a] -> [a] -> [a]
+{I0} intersect xs ys = filter (\e -> elem e ys) xs
+```
+
+Y la siguiente propiedad que vale para todos los tipos a y b pertenecientes a la clase Eq:  
+
+```hs
+{CONGRUENCIA ==} ∀ x::a . ∀ y::a . ∀ f::a->b . (a == b ⇒ f a == f b)
+lo llamo {CG}
+```  
+
+Indicar si las siguientes propiedades son verdaderas o falsas. Si son verdaderas, realizar una demostración.
+Si son falsas, presentar un contraejemplo.
+
+1. 
+    ```hs
+    Eq a => ∀ xs::[a] .
+    ∀ e::a . ∀ p::a -> Bool .
+    elem e xs && p e = elem e (filter p xs)
+
+    -- Sea P(xs):
+    -- ∀ e::a . ∀ p::a -> Bool .
+    P(xs): elem e xs && p e = elem e (filter p xs)
+    
+    -- Caso Base: P([]) -------
+    -- QVQ
+    P([]): elem e [] && p e = elem e (filter p [])
+           
+    -- Lado izquierdo
+           elem e [] && p e
+    {E0} = False && p e
+    {&&} = False
+
+    -- Lado derecho
+           elem e (filter p [])
+    {F0} = elem e []
+    {E0} = False -- ✓ igual a lado izquierdo
+
+    -- Paso Inductivo --------
+    -- tomando P(xs) como mi HI,
+    -- QVQ, para ∀ x:: a . 
+    P((x:xs)): elem e (x:xs) && p e = elem e (filter p (x:xs))
+
+    -- Lado izquierdo (LI)
+           elem e (x:xs) && p e
+    {E1} = ((e==x) || elem e xs) && p e
+
+    -- Lado derecho (LD)
+           elem e (filter p (x:xs))
+    {F1} = elem e (if p x then x : filter p xs else filter p xs)
+
+    -- Caso 1: e == x
+    {
+        -- LI
+               ((e==x) || elem e xs) && p e
+        {Bo} = (True || elem e xs) && p e
+        {||} = True && p e
+        {&&} = p e
+
+        -- Caso 1.1: p x
+        {   
+            -- LD
+                   elem e (if p x then x : filter p xs else filter p xs)
+            {IF} = elem e (x : filter p xs)
+            {E1} = (e==x) || elem e (filter p xs)
+            {Bo} = True || elem e (filter p xs)
+            {||} = True
+
+            -- Vale siempre {Congruencia}
+            x == e  =>  p x == p e
+            = True  =>  True == p e
+            <=>  p e = True
+
+            -- LI
+            p e = True -- = LD   ✓
+        }
+
+        -- Caso 1.2: NOT p x
+        {
+            -- HI: P(xs): elem e xs && p e = elem e (filter p xs)
+
+            -- Vale siempre {Congruencia}
+            x == e  =>  p x == p e
+            = True  =>  False == p e
+            <=>  p e = False
+
+            -- LD
+                 elem e (if p x then x : filter p xs else filter p xs)
+            {IF} = elem e (filter p xs)
+            {HI} = elem e xs && p e
+            {Cg} = elem e xs && False
+            {&&} = False
+
+            -- LI
+            p e = False -- LD   ✓
+        }
+    }
+    -- Caso 2: NOT e == x
+    {   
+        -- LI
+               ((e==x) || elem e xs) && p e
+        {Bo} = (False || elem e xs) && p e
+        {||} = elem e xs && p e
+        {HI} = elem e (filter p xs)
+
+        -- Caso 2.1: p x
+        {
+            -- LD
+                   elem e (if p x then x : filter p xs else filter p xs)
+            {IF} = elem e (x : filter p xs)
+            {E1} = (e==x) || elem e (filter p xs)
+            {Bo} = False || elem e (filter p xs)
+            {||} = elem e (filter p xs) -- = LI   ✓
+        }
+        -- Caso 2.2: NOT p x
+        {
+            -- LD
+                   elem e (if p x then x : filter p xs else filter p xs)
+            {IF} = elem e (filter p xs) -- = LI   ✓
+        }
+    }
+
+    -- Vale P((x:xs)), luego la igualdad es verdadera
+
+    ```

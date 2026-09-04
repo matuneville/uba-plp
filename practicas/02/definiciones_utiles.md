@@ -36,6 +36,10 @@ map :: (a -> b) -> [a] -> [b]
 {M0} map f [] = []
 {M1} map f (x : xs) = f x : map f xs
 
+filter :: (a -> Bool) -> [a] -> [a]
+{F0} filter p [] = []
+{F1} filter p (x:xs) = if p x then x : filter p xs else filter p xs
+
 elem :: Eq a => a -> [a] -> Bool
 {E0} elem e [] = False
 {E1} elem e (x:xs) = (e == x) || elem e xs
