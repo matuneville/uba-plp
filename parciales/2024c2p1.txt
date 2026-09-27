@@ -205,13 +205,13 @@ QVQ:
 
 - Caso inductivo: ∀i,d::AB a. ∀x::a. (P(i) ∧ P(d) ⇒ P(Bin i x d))
 
-    HI1 → P(i) = ∀u:: AB a. altura i ≥ altura (zipAB i u)
-    HI2 → P(d) = ∀u:: AB a. altura d ≥ altura (zipAB d u)
+    HI1 → P(i) = ∀s:: AB a. altura i ≥ altura (zipAB i s)
+    HI2 → P(d) = ∀s:: AB a. altura d ≥ altura (zipAB d s)
 
-    Sea u :: AB a cualquiera
-        P(Bin i x d) = ∀u:: AB a. altura (Bin i x d) ≥ altura (zipAB (Bin i x d) u)
+    Sea u::AB a un arbol cualquiera, entonces vale
+        P(Bin i x d) = altura (Bin i x d) ≥ altura (zipAB (Bin i x d) u)
 
-    QVQ vale P(Bin i x d). Sea u :: AB a cualquiera
+    QVQ vale P(Bin i x d)
 
     altura (Bin i x d) ≥ altura (zipAB (Bin i x d) u)
     {A1} =  1 + max (altura i) (altura d) 
@@ -229,36 +229,43 @@ QVQ:
         - Caso u = Nil:
             
             LI = 1 + max (altura i) (altura d)
-            {HI1} ≥ 1 + max (altura (zipAB i u)) (altura d) 
-            {HI2} ≥ 1 + max (altura (zipAB i u)) (altura (zipAB d u))
-            {LEMA} ≥ 1 + max 0 (altura (zipAB d u))
+            {LEMA} ≥ 1 + max 0 (altura d)
             {LEMA} ≥ 1 + max 0 0
             {max} ≥ 1 + 0
             {+} ≥ 1
-
 
             LD = altura (case u of
                         Nil -> Nil
                         Bin i' r' d' -> Bin (zipAB i i') (r,r') (zipAB d d'))
             {CASE} = altura (Nil)
-            {A0} = 0 
+            {A0} = 0 = LD
 
-            LI ≥ LD  ⟺ 1 ≥ 0 -- ✓
+            Tenemos entonces
 
-        - Caso u = Nil:
-            
-{LEMA} ∀t::AB a.altura t ≥ 0
+            LI ≥ LD  ⟺  LI ≥ 1 ≥ LD = 0  ⟺  1 ≥ 0 -- ✓
+
+        - Caso u = Bin i' x' d':
+
+            LI = 1 + max (altura i) (altura d)
+            {HI1} ≥ 1 + max (altura (zipAB i s)) (altura d)                -- vale para todo s::AB a
+            {HI2} ≥ 1 + max (altura (zipAB i s)) (altura (zipAB d s'))     -- en particular s=i' y s=d'
+                  = 1 + max (altura (zipAB i i')) (altura (zipAB d d'))
 
 
-altura :: AB a -> Int
-{AO} altura Nil = O
-{A1} altura (Bin i r d) = 1 + max (altura i) (altura d)
+            LD = altura (case u of
+                        Nil -> Nil
+                        Bin i' r' d' -> Bin (zipAB i i') (r,r') (zipAB d d'))
+            {CASE} = altura (Bin (zipAB i i') (r,r') (zipAB d d'))
+            {A1} = 1 + max (altura (zipAB i i')) (altura (zipAB d d')) = LD
 
-zipAB:: AB a -> AB b -> AB (a,b)
-(Z0) zipAB Nil = const Nil
-{Z1} zipAB (Bin i r d) = \t -> case t of
-    Nil -> Nil
-    Bin i' r' d' -> Bin (zipAB i i') (r,r') (zipAB d d')
+            Tenemos entonces
+
+            LI ≥ LD  ⟺
+            LI ≥ 1 + max (altura (zipAB i i')) (altura (zipAB d d')) = LD -- ✓
+        
+        Entonces por Lema de Generacion, vale P(Bin i x d) para cualquier u::AB a.
+        Con esto queda demostrado el paso inductivo ⟹ vale propiedad  ∀t::AB a. ∀u:: AB a.
+        ∎
 ---
 
 b) Demostrar el siguiente teorema usando deducción natural, sin utilizar principios clásicos:
