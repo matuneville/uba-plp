@@ -1,0 +1,294 @@
+# Ejercicio 1 ----------------------------------------------------------------------------------------------------------------
+
+El siguiente tipo de datos sirve para representar un buffer con historia que permite escribir o leer en
+cualquiera de sus posiciones (las posiciones tienen tipo Int). El tipo del buffer es paramétrico en el tipo de los contenidos que se pueden guardar en él. Si se escribe dos veces en la misma posición, el nuevo contenido pisa al anterior (por simplicidad). La lectura elimina el contenido leído.
+data Buffer a = Empty | Write Int a (Buffer a) | Read Int (Buffer a)
+
+Definimos el siguiente buffer para los ejemplos:
+buf = Write 1 "a" $ Write 2 "b" $ Write 1 "c" $ Empty
+
+data Buffer a = Empty | Write Int a (Buffer a) | Read Int (Buffer a)
+
+---
+
+a) Dar el tipo y definir la función foldBuffer y recBuffer, que implementan respectivamente los esquemas de recursión estructural y primitiva para el tipo Buffer a. Solo en este inciso se permite usar recursión explícita.
+
+-- para cWrite:
+-- cada parámetro del constructor lo paso con su mismo tipo
+-- y el parametro recursivo con el tipo del output
+
+foldBuffer :: b -> (Int -> a -> b -> b) -> (Int -> b -> b) -> Buffer a -> b
+foldBuffer cEmpty cWrite cRead buf = case b of |
+    Empty = cEmpty 
+    Write n x subBuf = cWrite n x (rec subBuf)
+    Read n subBuf = cRead n (rec subBuf)
+        where
+            rec = foldBuffer cEmpty cWrite cRead
+
+
+recBuffer :: b -> (Int -> a -> Buffer a -> b -> b) -> (Int -> Buffer a -> b -> b) -> Buffer a -> b
+recBuffer cEmpty cWrite cRead buf = case b of |
+    Empty = cEmpty 
+    Write n x subBuf = cWrite n x subBuf (rec subBuf)
+    Read n subBuf = cRead n subBuf (rec subBuf)
+        where
+            rec = recBuffer cEmpty cWrite cRead
+
+---
+
+b) Definir la función posicionesOcupadas::Buffer a -> [Int], que lista las posiciones ocupadas en un buffer (sin posiciones repetidas).
+Por ejemplo: posicionesOcupadas buf ⇝ [1, 2]
+
+buf = Write 2 "a" $ Write 1 "b" $ Write 1 "c" $ Empty
+buf1 = Read 2 $ Write 1 "b" $ Write 1 "c" $ Write 2 "a" $ Empty
+posicionesOcupadas buf ⇝ [2, 1]
+posicionesOcupadas buf1 ⇝ [1]
+
+
+data Buffer a = Empty | Write Int a (Buffer a) | Read Int (Buffer a)
+
+posicionesOcupadas::Buffer a -> [Int]
+posicionesOcupadas = foldBuffer cEmpty cWrit cRead
+    where
+        cEmpty = []
+        cWrite = (\n x rec -> if not (elem n rec) then n:rec else rec)
+        cRead  = (\n rec -> remove rec n)
+            where
+                remove xs x = filter xs (\i -> i /= x)
+
+---
+
+c) Definir la función contenido::Int -> Buffer a -> Maybe a, que devuelva el contenido de una posición en un buffer si hay algo en ella, y Nothing en caso contrario.
+
+Ejemplos: 
+
+buf = Read 2 $ Write 1 "b" $ Write 1 "c" $ Write 2 "a" $ Empty
+contenido 1 buf ⇝ Just "a".
+contenido (-2) buf ⇝ Nothing.
+contenido 1 (Read 1 buf) ⇝ Nothing.
+
+data Maybe a = Nothing | Just a
+
+contenido :: Int -> Buffer a -> Maybe a
+contenido n b = foldBuffer cEmpty cWrite cRead
+    where 
+        cEmpty = Nothing 
+        cWrite = (\m x rec -> if n == m then (Just x) else rec)
+        cRead  = (\m rec -> if n == m then Nothing else rec)
+
+---
+
+d) Definir la función puedeCompletarLecturas::Buffer a -> Bool, que indique si todas las lecturas pueden completarse exitosamente (es decir, si cada vez que se intenta leer una posición, hay algo escrito en ella).
+
+Por ejemplo:
+puedeCompletarLecturas (Read 1 Empty) ⇝ False.
+puedeCompletarLecturas (Read 1 buf) ⇝ True.
+puedeCompletarLecturas (Read 1 $ Read 1 buf) ⇝ False.
+
+puedeCompletarLecturas::Buffer a -> Bool
+puedeCompletarLecturas = recBuffer cEmpty cWrite cRead
+    where
+        cEmpty = True
+        cWrite = (\_ _ _ rec -> rec)
+        cRead = (\n b rec -> esLecturaExitosa n b && rec)
+            where
+                esLecturaExitosa n b = elem n (posicionesOcupadas b)
+
+---
+
+e) Definir la función deshacer::Buffer a -> Int -> Buffer a, que dados un buffer y un número natural n (es decir, un Int que por contexto de uso no es negativo), deshaga las últimas n operaciones del buffer, sacando los n constructores más externos para obtener un buffer como el original antes de realizar dichas operaciones. Si se realizaron menos de n operaciones, el resultado debe quedar vacío.
+
+buf = Read 2 $ Write 1 "b" $ Write 1 "c" $ Write 2 "a" $ Empty
+
+data Buffer a = Empty | Write Int a (Buffer a) | Read Int (Buffer a)
+
+Ejemplos:
+  deshacer' (Read 2 $ Write 1 "b" $ Write 1 "c" $ Write 2 "a" $ Empty) 2
+= deshacer' (Write 1 "b" $ Write 1 "c" $ Write 2 "a" $ Empty) 1
+= deshacer' (Write 1 "c" $ Write 2 "a" $ Empty) 0
+= Write 1 "c" $ Write 2 "a" $ Empty
+
+  deshacer' (Read 2 $ Empty) 3
+= deshacer' (Empty) 2
+= Empty
+
+  deshacer' (Read 2 $ Read 2 $ Read 2 $ Empty) 6
+= deshacer' (Read 2 $ Read 2 $ Empty) 5
+= deshacer' (Read 2 $ Empty) 4
+= deshacer' (Empty) 3
+= Empty
+
+
+deshacer'::Buffer a -> Int -> Buffer a
+deshacer' Empty     = const Empty           -- caso "ya deshice todo" o "se realizaron menos de n operaciones"
+deshacer' (Write n x buf) = \m ->
+    if m == 0
+        then (Write n x buf)
+        else (recWrite (m-1))
+deshacer' (Read n buf) = \m -> 
+    if m == 0 
+        then (Read n buf)
+        else (recRead m-1)
+    where
+        recWrite = deshacer' buf
+        recRead = deshacer' buf
+
+
+deshacer::Buffer a -> Int -> Buffer a
+deshacer = recBuffer cEmpty cWrite cRead
+    where
+        cEmpty = const Empty
+        cWrite = (\n x buf recWrite ->
+            \m -> if m == 0
+                then (Write n x buf)
+                else recWrite (m-1)
+            )
+        cRead  = (\n x buf recRead -> 
+            \m -> if m == 0 
+                then (Read n buf)
+                else recRead (m-1)
+            )
+
+
+--
+
+# Ejercicio 2 ----------------------------------------------------------------------------------------------------------------
+
+Considerar las siguientes definiciones:
+
+data AB a = Nil | Bin (AB a) a (AB a)
+
+const:: a -> b -> a
+{C} const = (\ x -> \ y -> x)
+
+altura :: AB a -> Int
+{AO} altura Nil = O
+{A1} altura (Bin i r d) = 1 + max (altura i) (altura d)
+
+zipAB:: AB a -> AB b -> AB (a,b)
+(Z0) zipAB Nil = const Nil
+{Z1} zipAB (Bin i r d) = \t -> case t of
+    Nil -> Nil
+    Bin i' r' d' -> Bin (zipAB i i') (r,r') (zipAB d d')
+
+a) Demostrar la siguiente propiedad:
+∀t::AB a. ∀u:: AB a. altura t ≥ altura (zipAB t u)
+
+Se recomienda hacer inducción en un árbol, utilizando extensionalidad para el otro cuando sea necesario. Se permite definir macros (i.e., poner nombres a expresiones largas para no tener que repetirlas).
+No es obligatorio escribir los ∀ correspondientes en cada paso, pero es importante recordar que están presentes. Recordar también que los = de las definiciones pueden leerse en ambos sentidos.
+Se consideran demostradas todas las propiedades conocidas sobre enteros y booleanos, así como también:
+{LEMA} ∀t::AB a.altura t ≥ 0
+
+
+∀t::AB a. ∀u:: AB a.
+altura t ≥ altura (zipAB t u)
+
+Voy a hacer inducción sobre la estructura AB t. 
+
+1. Planteo predicado unario: P(t) = ∀u:: AB a. altura t ≥ altura (zipAB t u)
+QVQ:
+∀t::AB a. P(t)
+
+2. Planteo caso inductivo sobre la estructura AB t
+
+- Caso base: P(Nil) = ∀u:: AB a. altura Nil ≥ altura (zipAB Nil u)
+
+    altura Nil ≥ altura (zipAB Nil u) = 
+    {A0} 0 ≥ altura (zipAB Nil u) =
+    {Z0} 0 ≥ altura ((const Nil) u) =
+    {C}  0 ≥ altura (((\ x -> \ y -> x) Nil) u) =
+    {β}  0 ≥ altura ((\ y -> Nil) u) =
+    {β}  0 ≥ altura Nil
+    {A0} 0 ≥ 0 -- ✓
+    
+    y esto vale ∀ u:: AB a
+
+- Caso inductivo: ∀i,d::AB a. ∀x::a. (P(i) ∧ P(d) ⇒ P(Bin i x d))
+
+    HI1 → P(i) = ∀u:: AB a. altura i ≥ altura (zipAB i u)
+    HI2 → P(d) = ∀u:: AB a. altura d ≥ altura (zipAB d u)
+
+    Sea u :: AB a cualquiera
+        P(Bin i x d) = ∀u:: AB a. altura (Bin i x d) ≥ altura (zipAB (Bin i x d) u)
+
+    QVQ vale P(Bin i x d). Sea u :: AB a cualquiera
+
+    altura (Bin i x d) ≥ altura (zipAB (Bin i x d) u)
+    {A1} =  1 + max (altura i) (altura d) 
+    {Z1} = 1 + max (altura i) (altura d)  ≥ altura ((\t -> case t of
+                                Nil -> Nil
+                                Bin i' r' d' -> Bin (zipAB i i') (r,r') (zipAB d d')
+                                ) u)
+    {β} = 1 + max (altura i) (altura d) ≥ altura (case u of
+                        Nil -> Nil
+                        Bin i' r' d' -> Bin (zipAB i i') (r,r') (zipAB d d'))
+        = LI ≥ LD
+
+    Usamos Lema de Generacion de AB sobre u
+
+        - Caso u = Nil:
+            
+            LI = 1 + max (altura i) (altura d)
+            {HI1} ≥ 1 + max (altura (zipAB i u)) (altura d) 
+            {HI2} ≥ 1 + max (altura (zipAB i u)) (altura (zipAB d u))
+            {LEMA} ≥ 1 + max 0 (altura (zipAB d u))
+            {LEMA} ≥ 1 + max 0 0
+            {max} ≥ 1 + 0
+            {+} ≥ 1
+
+
+            LD = altura (case u of
+                        Nil -> Nil
+                        Bin i' r' d' -> Bin (zipAB i i') (r,r') (zipAB d d'))
+            {CASE} = altura (Nil)
+            {A0} = 0 
+
+            LI ≥ LD  ⟺ 1 ≥ 0 -- ✓
+
+        - Caso u = Nil:
+            
+{LEMA} ∀t::AB a.altura t ≥ 0
+
+
+altura :: AB a -> Int
+{AO} altura Nil = O
+{A1} altura (Bin i r d) = 1 + max (altura i) (altura d)
+
+zipAB:: AB a -> AB b -> AB (a,b)
+(Z0) zipAB Nil = const Nil
+{Z1} zipAB (Bin i r d) = \t -> case t of
+    Nil -> Nil
+    Bin i' r' d' -> Bin (zipAB i i') (r,r') (zipAB d d')
+---
+
+b) Demostrar el siguiente teorema usando deducción natural, sin utilizar principios clásicos:
+
+
+
+
+
+
+
+# Ejercicio 3 ----------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
