@@ -270,32 +270,146 @@ QVQ:
 
 b) Demostrar el siguiente teorema usando deducción natural, sin utilizar principios clásicos:
 
+((p ∧ σ) ∨ (p ∧ τ)) ⟹ (σ ∧ p) ∨ τ
 
 
 
-
+            __________________ax  __________________ax
+              Γ,(p ∧ σ) ⊢ p ∧ σ    Γ,(p ∧ σ) ⊢ p ∧ σ
+            _______________∧e2    ________________∧e1       _____________________ax
+              Γ,(p ∧ σ) ⊢ σ        Γ,(p ∧ σ) ⊢ p             Γ,(p ∧ τ) ⊢ p ∧ τ
+              _____________________________________∧i       __________________∧e2
+                               Γ,(p ∧ σ) ⊢ σ ∧ p              Γ,(p ∧ τ) ⊢ τ
+__________________ax        __________________________∨i1    _________________________∨i2
+Γ ⊢ (p ∧ σ) ∨ (p ∧ τ)        Γ,(p ∧ σ) ⊢ (σ ∧ p) ∨ τ         Γ,(p ∧ τ) ⊢ (σ ∧ p) ∨ τ
+___________________________________________________________________________________ ∨e
+Γ = (p ∧ σ) ∨ (p ∧ τ)  ⊢  (σ ∧ p) ∨ τ
+_______________________________________ ⇒i
+ ⊢ ((p ∧ σ) ∨ (p ∧ τ)) ⟹ (σ ∧ p) ∨ τ
 
 
 # Ejercicio 3 ----------------------------------------------------------------------------------------------------------------
 
+Se desea extender el cálculo lambda simplemente tipado para modelar árboles ternarios. Para eso se extienden los tipos y expresiones de la siguiente manera:
+
+τ ::= ... | AT(τ)
+
+M ::= ... | TNil_τ | Tern(M,M,M,M) | foldAT M △ TNil ~> M; Tern(x,ri,rm,rd) ~> M 
+
+- T(τ) es el tipo de los árboles ternarios con nodos de tipo τ.
+- TNil_τ es un árbol ternario vacío que admite valores de tipo τ.
+- Tern(M1,M2,M3,M4) es un árbol ternario con raíz M1 e hijos M2, M3 y M4.
+- foldAT M1 △ TNil ~> M2; Tern(x,ri,rm,rd) ~> M3 es el esquema de recursión estructural para árboles ternarios, donde las variables x, ri, rm y rd se ligarán a la raíz y los resultados de la recursión sobre los hijos izquierdo, medio y derecho del árbol M1 respectivamente.
+
+a) Introducir las reglas de tipado para la extensión propuesta.
+
+    Se hacen reglas de tipado para todo término nuevo que se agregue a la sintaxis de M,
+    sin importar cuál sea su tipo resultante.
+    1 regla por cada término.
+
+    ___________________ T-NilT
+    Γ ⊢ TNil_τ : AT(τ)
 
 
 
+    Γ ⊢ M:τ   Γ ⊢ N:AT(τ)   Γ ⊢ O:AT(τ)   Γ ⊢ P:AT(τ)
+    ______________________________________________________ T-Tern
+    Γ ⊢ Tern(M,N,O,P) : AT(τ)
 
 
 
+    Γ ⊢ M:AT(τ)   Γ ⊢ N:σ     Γ,x:τ, ri:σ, rm:σ, rd:σ ⊢ O:σ
+    ________________________________________________________ T-foldAT
+    Γ ⊢ foldAT M △ TNil ~> N; Tern(x,ri,rm,rd) ~> O : σ
+
+    El caso base N fija σ, y el caso recursivo asume x:τ (raiz, tipado como el M) y ri,rm,rd:σ (resultados del fold en los hijos) para poder garantizar que el resultado O es también σ.
+
+---
+
+b) Definir el conjunto de valores y las nuevas reglas de reducción en un paso.
+
+    Los valores son los términos que ya están "completamente evaluados" y no pueden reducirse más. Son exactamente las aplicaciones (totalmente evaluadas) de los CONSTRUCTORES de ese tipo. En este caso:
+
+    V ::= ... | TNil_τ | Tern(V,W,U,Z)
+
+    foldAT no es constructor de AT(τ) (es el eliminador), así que nunca es valor, sin importar qué tipo σ devuelva
+
+    Reglas de reducción:
+        de Cómputo:
+
+            Cada eliminador se encuentra con un constructor ya evaluado (valor). Es decir, van en los términos que consumen el tipo, no en los que lo construyen.
+
+            - foldAT TNil_τ △ TNil ~> N; Tern(x,ri,rm,rd) ~> O         ⟶ N   {e-foldAT-Nil}
+            - foldAT Tern(V,W,U,Z) △ TNil ~> N; Tern(x,ri,rm,rd) ~> O  ⟶     {e-foldAT-Tern}
+                O {x:=V,
+                ri:=foldAT W △ TNil ~> N; Tern(x,ri,rm,rf) ~> O,
+                rm:=foldAT U △ TNil ~> N; Tern(x,ri,rm,rf) ~> O,
+                rd:=foldAT Z △ TNil ~> N; Tern(x,ri,rm,rf) ~> O}
+
+        de Congruencia:
+
+            Se necesitan para toda posición de subtérmino que deba evaluarse, tanto en constructores como en eliminadores.
+            Evalúan de izquierda a derecha
+
+            En NilT no se hace ya que no tiene subtérmino.
+
+            En foldAT no lo hago para N y O ya que las ramas de una construcción, tipo if o foldAT, nunca tienen congruencia propia — solo se evalúa el discriminante (M), porque las ramas son "código muerto" hasta que se decide cuál se ejecuta.
+
+            Si M ⟶ M' entonces
+            - Tern(M,N,O,P) ⟶ Tern(M',N,O,P)
+            - foldAT M △ TNil ~> N; Tern(x,ri,rm,rd) ~> O  ⟶  foldAT M' △ TNil ~> N; Tern(x,ri,rm,rd) ~> O
+            
+            Si N ⟶ N' entonces
+            - Tern(V,N,O,P) ⟶ Tern(V,N',O,P)
+            
+            Si O ⟶ O' entonces
+            - Tern(V,W,O,P) ⟶ Tern(V,W,O',P)
+
+            Si P ⟶ P' entonces
+            - Tern(V,W,U,P) ⟶ Tern(V,W,U,P')
+
+---
+
+c) Mostrar paso por paso cómo reduce la expresión:
+(λt: AT(Nat).foldAT t △ TNil ~> False; Tern(x,ri,rm,rd) ~> isZero(Pred(x))) Tern(1, TNil_Nat, TNil_Nat, TNil_Nat)
+
+Para que una regla de cómputo se aplique, el/los argumento(s) que esa regla necesita inspeccionar deben ser valores. Si no lo son, lo único que podés hacer es reducirlos primero (regla de congruencia), hasta que sí lo sean.
+
+(λt: AT(Nat).foldAT t △ TNil ~> False; Tern(x,ri,rm,rd) ~> isZero(Pred(x))) Tern(1, TNil_Nat, TNil_Nat, TNil_Nat)
+
+⟶ (e-AppAbs)
+
+AT(Nat).foldAT t △ TNil ~> False; Tern(x,ri,rm,rd) ~> isZero(Pred(x)) {t := Tern(1, TNil_Nat, TNil_Nat, TNil_Nat)}
+= (sust.)
+AT(Nat).foldAT Tern(1, TNil_Nat, TNil_Nat, TNil_Nat) △ TNil ~> False; Tern(x,ri,rm,rd) ~> isZero(Pred(x))
+
+⟶ (e-foldAT-Tern)
+
+isZero(Pred(x)) {x:=1,
+    ri:=foldAT W △ TNil ~> False; Tern(x,ri,rm,rf) ~> isZero(Pred(x)), 
+    rm:=foldAT W △ TNil ~> False; Tern(x,ri,rm,rf) ~> isZero(Pred(x)),
+    rd:=foldAT W △ TNil ~> False; Tern(x,ri,rm,rf) ~> isZero(Pred(x))}
+= (sust.)
+isZero(Pred(1))
+=
+isZero(Pred(Succ(zero)))
+
+⟶ (e-PredSucc)
+
+isZero(zero)
+
+⟶ (e-IsZero0)
+
+true
+
+---
+
+d) Definir como macro la función mapAT_σ,τ , que toma un AT(σ) y una función de σ en τ, y aplica dicha función a todos los elementos del árbol.
 
 
-
-
-
-
-
-
-
-
-
-
-
+mapAT_σ,τ =
+    λt: AT(σ).
+    λf:(σ->τ).
+    foldAT t △ TNil ~> TNil_τ; Tern(x,ri,rm,rf) ~> Tern(f x, ri, rm rd)
 
 
