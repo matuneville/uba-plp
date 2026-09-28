@@ -1,0 +1,307 @@
+Ejercicio 1 - Programación funcional --------------------------------------------------------------------------------------
+
+En este ejercicio vamos a modelar lógica proposicional en Haskell, de modo de poder construir fórmulas proposicionales y evaluarlas bajo distintas valuaciones.
+
+data Prop = Var String | No Prop | Y Prop Prop | O Prop Prop | Imp Prop Prop
+
+type Valuación = String -> Bool
+
+Por ejemplo, la expresión: Y (Var "P") (No (Imp (Var "Q") (Var "R"))) representa la proposición P ∧ ¬(Q → R).
+
+Las valuaciones se representan como funciones que a cada variable proposicional le asignan un valor booleano. Por ejemplo la valuación \x -> x == "p" le asigna el valor verdadero a la variable P y falso a todas las otras variables proposicionales
+
+a) Dar el tipo y definir las funciones foldProp y recProp, que implementan respectivamente los esquemas
+de recursión estructural y primitiva para el tipo Prop. Solo en este inciso se permite usar recursión explícita.
+
+foldProp :: (String -> a) -> (a -> a) -> (a -> a -> a) -> (a -> a -> a) -> (a -> a -> a) -> Prop -> a
+foldProp fVar fNot fAnd fOr fImp prop = case prop of |
+    Var = fVar
+    No p = fNot (foldProp fVar fNot fAnd fOr fImp p) 
+    Y p q = fAnd (foldProp fVar fNot fAnd fOr fImp p) (foldProp fVar fNot fAnd fOr fImp q)
+    O p q = fOr (foldProp fVar fNot fAnd fOr fImp p) (foldProp fVar fNot fAnd fOr fImp q) 
+    Imp p q = fImp (foldProp fVar fNot fAnd fOr fImp p) (foldProp fVar fNot fAnd fOr fImp q) 
+
+recProp :: (String -> a) -> (Prop -> a -> a) -> (Prop -> a -> Prop -> a -> a) -> (Prop -> a -> Prop -> a -> a)  -> (Prop -> a -> Prop -> a -> a)  -> Prop -> a
+recProp fVar fNot fAnd fOr fImp prop = case prop of |
+    Var = fVar
+    No p = fNot p (recProp fVar fNot fAnd fOr fImp p) 
+    Y p q = fAnd p (recProp fVar fNot fAnd fOr fImp p) q (recProp fVar fNot fAnd fOr fImp q)
+    O p q = fOr p (recProp fVar fNot fAnd fOr fImp p) q (recProp fVar fNot fAnd fOr fImp q) 
+    Imp p q = fImp p (recProp fVar fNot fAnd fOr fImp p) q (recProp fVar fNot fAnd fOr fImp q) 
+
+---
+
+b) Definir la función variables :: Prop -> [String], que dada una fórmula devuelve la lista con todas sus variables proposicionales en algún orden, sin elementos repetidos.
+Por ejemplo: variables (0 (Var "P'") (No (Y (Var "Q") (Var '"P'")))) debería devolver lista ["P","Q"]
+
+variables :: Prop -> [String]
+variables = nub . foldProp (\s -> [s]) id (++) (++) (++)
+
+---
+
+c) Definir la función evaluar :: Valuación -> Prop -> Bool, que indica si una fórmula es verdadera o falsa para una valuación dada.
+evaluar (s-> case s of | s == 'Q' = true) (Y (Var "P") (No (Imp (Var "Q") (Var "R"))))
+
+type Valuación = String -> Bool
+
+evaluar :: Valuación -> Prop -> Bool
+evaluar fEval = foldProp fEval (not) (||) (&&) (\recP recQ -> recQ || not recP)
+
+---
+
+d) Definir la función estáEnFNN :: Prop -> Boo1, que indica si una fórmula está en Forma Normal Negada. Es decir, si no tiene implicaciones y la negación se aplica únicamente a variables y no a proposiciones más complejas.
+
+Por ejemplo: Y (Var "P'") (No (Imp (Var "Q'") (Var "R*'))) no está en FNN,
+y en cambio Y (Var ''P'') (Y (Var 'Q'') (No (Var ''R'"))) sí lo está.
+
+data Prop = Var String | No Prop | Y Prop Prop | O Prop Prop | Imp Prop Prop
+
+estáEnFNN :: Prop -> Boo1
+estáEnFNN = recProp
+    (const True)
+    (\p _ -> esVariable p)
+    (\_ recP _ recQ -> recP && recQ)
+    (\_ recP _ recQ -> recP && recQ )
+    (\_ _ _ _ -> False)
+
+esVariable :: Prop -> Bool
+esVariable (Var _) = True
+esVariable _ = False
+
+
+Ejercicio 2 - Demostración e inferencia --------------------------------------------------------------------------------------
+
+Considerar las siguientes definiciones sobre árboles con información en las hojas¹:
+
+data AIH a = Hoja a | Bin (AIH a) (AIH a)
+
+     esHoja :: AIH a -> Bool
+{E0} esHoja (Hoja x) = True
+{E1} esHoja (Bin i d) = False
+
+     izq :: AIH a -> AIH a
+{I}  izq (Bin i d) = i
+
+     der :: AIH a -> AIH a
+{D}  der (Bin i d) = d
+
+     mismaEstructura :: AIH a -> AIH a -> Bool
+{M0} mismaEstructura (Hoja x) = esHoja
+{M1} mismaEstructura (Bin i d) = \t -> not (esHoja t) &&
+          mismaEstructura i (izq t) && mismaEstructura d (der t)
+
+
+a) Demostrar la siguiente propiedad:
+
+   ∀ t::AIH a . ∀ u::AIH a . mismaEstructura t u = mismaEstructura u t
+
+   Se recomienda hacer inducción en el primer árbol, utilizando extensionalidad en el segundo. Se permite definir macros (poner nombres a expresiones largas para no tener que repetirlas).
+
+   No es obligatorio reescribir los ∀ correspondientes en cada paso, pero es importante recordar que están presentes y escribir los que correspondan al platear la propiedad como predicado unario. Recordar también que los = de las definiciones pueden leerse en ambos sentidos.
+
+   Se consideran demostradas todas las propiedades conocidas sobre enteros y booleanos.
+
+    > Principio de extensionalidad funcional. Sean f, g :: a -> b.  Si (∀x :: a. f x = g x) entonces f = g.
+
+    1. Planteo predicado unario: P(t) ≡  ∀ u::AIH a . mismaEstructura t u = mismaEstructura u t
+    
+    Caso Base:
+    QVQ 
+    ∀ t::AIH a . vale P(t)
+
+    Hago inducción sobre t:
+
+    sean x:a, 
+    P(Hoja x) ≡
+    ∀ u::AIH a . mismaEstructura (Hoja x) u = mismaEstructura u (Hoja x)
+                    LI                      =    LD
+    LI
+    = mismaEstructura (Hoja x) u
+    {M0} = esHoja u
+    
+    LD
+    = mismaEstructura u (Hoja x)
+
+    Por Lema de generación sobre u, veo los casos donde:
+
+    sea y::a
+    - Caso u = Hoja y:
+
+        LI =
+        esHoja (Hoja y)
+        {E0} = True
+        
+        LD =
+        mismaEstructura (Hoja y) (Hoja x)
+        {M0} = esHoja (Hoja x)
+        {E0} = True
+        
+        Entonces en el caso de que u = Hoja y, llegamos a LI = LD.
+    
+
+    sea i,d::AIH a
+    - Caso u = Bin i d:
+
+        LI =
+        esHoja (Bin i d)
+        {E1} = False
+        
+        LD =
+        mismaEstructura (Bin i d) (Hoja x)
+        {M1} = (\t -> not (esHoja t) && mismaEstructura i (izq t) && mismaEstructura d (der t)) (Hoja x)
+        {β} = not (esHoja (Hoja x)) && mismaEstructura i (izq (Hoja x)) && mismaEstructura d (der (Hoja x))
+        {E0} = not (True) && ...
+        {Bool} = False &&
+        {Bool} = False
+    
+        Entonces en el caso de que u = Bin i d, llegamos a LI = LD.
+
+    Como en ambos casos llegamos a lo mismo, entonces vale LI = LD. Como tome cualquier x::a, entonces vale ∀x::a P(Hoja x)
+
+    2. Paso Inductivo papaaaaa
+
+    QVQ 
+    Sea i,d::AIH a, P(i) y P(d) ⇒ P(Bin i d)
+    
+    HI: valen P(i) ≡ ∀ u::AIH a . mismaEstructura i u = mismaEstructura u i
+    y P(d) ≡ ∀ u::AIH a . mismaEstructura d u = mismaEstructura u d
+
+    P(Bin i d) ≡
+    ∀ u::AIH a . mismaEstructura (Bin i d) u = mismaEstructura u (Bin i d)
+                        LI                   =      LD
+    
+    LI:
+    mismaEstructura (Bin i d) u 
+    {M1} = (\t -> not (esHoja t) && mismaEstructura i (izq t) && mismaEstructura d (der t)) u
+    {β} = not (esHoja u) && mismaEstructura i (izq u) && mismaEstructura d (der u)
+
+    LD:
+    mismaEstructura u (Bin i d)
+
+    Por Lema de generación sobre u, veo los casos donde:
+
+    sea y::a
+    - Caso u = Hoja y:
+
+        LI:
+        not (esHoja (Hoja y)) && mismaEstructura i (izq (Hoja y)) && mismaEstructura d (der (Hoja y))
+        {E0} = not (True) && ...
+        {Bool} = False
+
+        LD:
+        mismaEstructura (Hoja y) (Bin i d)
+        {M0} = esHoja (Bin i d)  
+        {M0} = False
+
+        Luego LI = LD, entonces vale para u = Hoja y
+    
+
+    sea i',d'::AIH a
+    - Caso u = Bin i' d':
+
+        LI:
+        not (esHoja (Bin i' d')) && mismaEstructura i (izq (Bin i' d')) && mismaEstructura d (der (Bin i' d'))
+        {E1, Bool} True && mismaEstructura i (izq (Bin i' d')) && mismaEstructura d (der (Bin i' d'))
+              = mismaEstructura i (izq (Bin i' d')) && mismaEstructura d (der (Bin i' d'))
+        {HI1, HI2} = mismaEstructura (izq (Bin i' d')) i && mismaEstructura (der (Bin i' d')) d
+        {I,D} = mismaEstructura i' i && mismaEstructura d' d
+
+        LD:
+        mismaEstructura (Bin i' d') (Bin i d)
+        {M1} = (\t -> not (esHoja t) && mismaEstructura i' (izq t) && mismaEstructura d' (der t)) (Bin i d)
+        {β} = not (esHoja (Bin i d)) && mismaEstructura i' (izq (Bin i d)) && mismaEstructura d' (der (Bin i d))
+        {I, D, E1} = not False && mismaEstructura i' i && mismaEstructura d' d
+        {β} = True && mismaEstructura i' i && mismaEstructura d' d
+            = mismaEstructura i' i && mismaEstructura d' d
+    
+    Con esto queda demostrado el paso inductivo. Por lo tanto vale la igualdad ∀...
+
+---
+
+b) Usar el algoritmo W para inferir juicios de tipado válidos para las siguientes expresiones, o indicar por qué no es posible (recordar que en inferencia no está permitido renombrar variables):
+
+   i) (λx.x(λx.Succ(x)))(λx.x)
+   ii) λx.if isZero(x) then x else x zero
+
+inferencia, tema de 2do parcial.
+To Be Continued!!!
+
+
+Ejercicio 3 - Cálculo Lambda Tipado --------------------------------------------------------------------------------------
+
+Se desea extender el cálculo lambda simplemente tipado para modelar Árboles con información en las hojas. Para eso se extienden los tipos y expresiones de la siguiente manera:
+  τ ::= ... | AIH(τ)
+  M ::= ... | Hoja(M) | Bin(M, M) | case M of Hoja x ~> M; Bin(i, d) ~> M
+
+  • AIH(τ) es el tipo de los árboles con información en las hojas de tipo τ.
+  • Hoja(M) es un árbol compuesto por una única hoja con información M.
+  • Bin(M₁, M₂) es un árbol compuesto por dos subárboles M₁ y M₂.
+  • El observador case M₁ of Hoja x ~> M₂; Bin(i, d) ~> M₃ permite acceder al valor de un árbol que es hoja (el cual se ligará a la variable x que puede aparecer libre en M₂), y a los dos subárboles de un árbol que no es hoja (los cuales se ligarán a las variables i y d que pueden aparecer libres en M₃).
+
+a. Introducir las reglas de tipado para la extensión propuesta.
+
+    Γ ⊢ M:τ
+    ____________________T-Hoja
+    Γ ⊢ Hoja(M) : AIH(τ)
+
+
+    Γ ⊢ M:τ     Γ ⊢ N:τ
+    _____________________T-Bin
+    Γ ⊢ Bin(M,N) : AIH(τ)
+    
+    
+    Γ ⊢ M : AIH(τ)  Γ,x:τ ⊢ N:σ  Γ,i,d:AIH(τ) ⊢ O:σ
+    __________________________________________________T-Case
+    Γ ⊢ case M of Hoja x ~> N; Bin(i, d) ~> O : σ
+
+---
+
+b. Definir el conjunto de valores y las nuevas reglas de semántica operacional a pequeños pasos, tanto de congruencia como de cómputo.
+
+    V ::= true | false | \x:t.M | 0 | succ(V) | 
+    V ::= ... | Hoja(V) | Bin(V,V)
+
+    Reglas de Cómputo:
+
+        - case Hoja(V) of Hoja x ~> M; Bin(i, d) ~> N   ⟶ M {x:=V}          (E-caseHoja)
+        - case Bin(V,W) of Hoja x ~> M; Bin(i, d) ~> N  ⟶ N {i:=V, d:=W}    (E-caseBin)
+
+    Reglas de Congruencia:
+
+        Si M ⟶ M' entonces:
+        - Hoja(M) ⟶ Hoja(M')                            (E-Hoja)
+        - Bin(M,N) ⟶ Bin(M',N)                          (E-Bin)
+        - Bin(V, M) ⟶ Bin(V,M')
+        - case M of Hoja x ~> N; Bin(i, d) ~> O         (E-Case)
+            ⟶   case M' of Hoja x ~> N; Bin(i, d) ~> O
+        // las ramas quedan igual (ES CLAVE)
+
+---
+
+c. Mostrar paso por paso cómo reduce la expresión:
+   case (λn: Nat. Hoja(n)) Succ(zero) of Hoja x ~> Succ(Pred(x)); Bin(i, d) ~> zero
+
+    case (λn: Nat. Hoja(n)) Succ(zero) of Hoja x ~> Succ(Pred(x)); Bin(i, d) ~> zero
+    (E-AppAbs, E-Case)
+    ⟶
+    case Hoja(n){n:=Suc(Zero)} of Hoja x ~> Succ(Pred(x)); Bin(i, d) ~> zero
+    =
+    case Hoja(Succ(zero)) of Hoja x ~> Succ(Pred(x)); Bin(i, d) ~> zero
+    (E-caseHoja)
+    -- Succ(zero) ya es un valor, entonces tenemos el case con Hoja(V), por lo que debemos
+    -- reducir case. Si tuvieramos algo como Hoja(Pred(Succ(zero))), como Pred(Succ(zero)) es reducible,
+    -- no es valor, entonces no tenemos Hoja(V) y se debe reducir primero lo de adentro
+    ⟶
+    Suc(Pred(x)) {x:=Succ(zero)}
+    =
+    Suc(Pred(Succ(zero)))
+    (E-PredSucc)
+    ⟶ 
+    Suc(zero) = 1
+                ¯
+
+---
+
+d. Definir como macro la función esHoja_τ, que toma un AIH(τ) y devuelve un booleano que indica si es una hoja.
+
+esHoja_τ ≡ λt:AIH(τ). case t of Hoja x ~> True; Bin(i, d) ~> False
