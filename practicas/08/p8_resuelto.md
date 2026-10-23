@@ -45,27 +45,78 @@ abuelo(X,Y) :- padre(X,Z), padre(Z,Y).
 #### iii. Dibujar el árbol de búsqueda de Prolog para la consulta descendiente(Alguien, juan).
 
 ```text
-descendiente(Alguien, juan)
-├── [C1] padre(juan, Alguien)
-│   ├── Alguien = carlos ---> ÉXITO
-│   └── Alguien = luis   ---> ÉXITO
-│
-└── [C2] padre(juan, Z), descendiente(Alguien, Z)
-    ├── Z = carlos ---> descendiente(Alguien, carlos)
-    │   ├── [C1] padre(carlos, Alguien)
-    │   │   ├── Alguien = daniel ---> ÉXITO
-    │   │   └── Alguien = diego  ---> ÉXITO
-    │   └── [C2] padre(carlos, Z2), descendiente(Alguien, Z2)
-    │       ├── Z2 = daniel ---> descendiente(Alguien, daniel) ---> padre(daniel, _) ---> FALLO
-    │       └── Z2 = diego  ---> descendiente(Alguien, diego)  ---> padre(diego, _)  ---> FALLO
-    │
-    └── Z = luis ---> descendiente(Alguien, luis)
-        ├── [C1] padre(luis, Alguien)
-        │   ├── Alguien = pablo  ---> ÉXITO
-        │   ├── Alguien = manuel ---> ÉXITO
-        │   └── Alguien = ramiro ---> ÉXITO
-        └── [C2] padre(luis, Z2), descendiente(Alguien, Z2)
-            └── Z2 ∈ {pablo, manuel, ramiro} ---> padre(Z2, _) ---> FALLO
+descendiente(X, Y) :- padre(Y, X).
+descendiente(X, Y) :- padre(Y, Z), descendiente(X, Z).
+
+?- descendiente(Alguien, juan)
+	?- padre(juan, Alguien) { X := Alguien, Y := juan }
+
+		?- padre(juan, carlos) { Alguien := carlos }
+			✓ { Alguien := carlos }
+
+		?- padre(juan, luis) { Alguien := luis }
+			✓ { Alguien := luis }
+
+	?- padre(juan, Z), descendiente(Alguien, Z) { X := Alguien, Y := juan }
+
+		?- padre(juan, carlos) { Z := carlos }
+			?- descendiente(Alguien, carlos)
+				?- padre(carlos, Alguien) { X := Alguien, Y := carlos }
+					✓ { Alguien := daniel }
+					✓ { Alguien := diego }
+
+				?- padre(carlos, Z'), descendiente(Alguien, Z') { X := Alguien, Y := carlos }
+					?- padre(carlos, daniel) { Z' := daniel }
+						?- descendiente(Alguien, daniel)
+							?- padre(daniel, Alguien) { X := Alguien, Y := daniel }
+								✗
+
+							?- padre(daniel, Z''), descendiente(Alguien, Z'') { X := Alguien, Y := daniel }
+								✗
+
+					?- padre(carlos, diego) { Z' := diego }
+						?- descendiente(Alguien, diego)
+							?- padre(diego, Alguien) { X := Alguien, Y := diego }
+								✗
+
+							?- padre(diego, Z''), descendiente(Alguien, Z'') { X := Alguien, Y := diego }
+								✗
+
+
+		?- padre(juan, luis) { Z := luis }
+			?- descendiente(Alguien, luis)
+				?- padre(luis, Alguien) { X := Alguien, Y := luis }
+					✓ { Alguien := pablo }
+					✓ { Alguien := manuel }
+					✓ { Alguien := ramiro }
+
+				?- padre(luis, Z'), descendiente(Alguien, Z') { X := Alguien, Y := luis }
+					?- padre(luis, pablo) { Z' := pablo }
+						?- descendiente(Alguien, pablo)
+							?- padre(pablo, Alguien) { X := Alguien, Y := pablo }
+								✗
+
+							?- padre(pablo, Z''), descendiente(Alguien, Z'') { X := Alguien, Y := pablo }
+								✗
+
+					?- padre(luis, manuel) { Z' := manuel }
+						?- descendiente(Alguien, manuel)
+							?- padre(manuel, Alguien) { X := Alguien, Y := manuel }
+								✗
+
+							?- padre(manuel, Z''), descendiente(Alguien, Z'') { X := Alguien, Y := manuel }
+								✗
+
+					?- padre(luis, ramiro) { Z' := ramiro }
+						?- descendiente(Alguien, ramiro)
+							?- padre(ramiro, Alguien) { X := Alguien, Y := ramiro }
+								✗
+
+							?- padre(ramiro, Z''), descendiente(Alguien, Z'') { X := Alguien, Y := ramiro }
+								✗
+
+Respuestas, de arriba hacia abajo (orden de Prolog):
+Alguien = carlos ; luis ; daniel ; diego ; pablo ; manuel ; ramiro
 ```
 
 #### iv. ¿Qué consulta habría que hacer para encontrar a los nietos de juan?
@@ -286,20 +337,193 @@ Definir los siguientes predicados sobre listas usando append:
 
 ---
 
+### Ejercicio 6
+
+#### Definir el predicado `aplanar(+Xs, -Ys)`, que es verdadero sii Ys contiene los elementos de todos los niveles de Xs, en el mismo orden de aparición. Los elementos de Xs son enteros, átomos o nuevamente listas, de modo que Xs puede tener una profundidad arbitraria. Por el contrario, Ys es una lista de un solo nivel de profundidad.
+
+Ejemplos:
+- `?- aplanar([a, [3, b, []], [2]], L).→ L=[a, 3, b, 2]`
+- `?- aplanar([[1, [2, 3], [a]], [[[]]]], L).→ L=[1, 2, 3, a]`  
+
+*Nota: este predicado ya está definido en prolog con el nombre flatten*
+
+- 
+    ```prolog
+    %! aplanar(+Xs, -Ys)
+    aplanar([], []).
+    aplanar([X | T], [X | L]) :- not(is_list(X)), aplanar(T, L).
+    aplanar([H | T], L) :- aplanar(H, U), aplanar(T, V), append(U, V, L).
+    ```
+
+---
+
 ### Ejercicio 7
 
 Definir los siguientes predicados, usando `member` y/o `append` según sea conveniente:
 
-#### i) `intersección(+L1, +L2, -L3)`, tal que `L3` es la intersección sin repeticiones de las listas `L1` y `L2`, respetando en `L3` el orden en que aparecen los elementos en `L1`. Y `partir(N, L, L1, L2)`, donde `L1` tiene los `N` primeros elementos de `L`, y `L2` el resto. Si `L` tiene menos de `N` elementos el predicado debe fallar. ¿Cuán reversible es este predicado? Es decir, ¿qué parámetros pueden estar indefinidos al momento de la invocación?
+#### i) `intersección(+L1, +L2, -L3)`, tal que `L3` es la intersección sin repeticiones de las listas `L1` y `L2`, respetando en `L3` el orden en que aparecen los elementos en `L1`.
+
+- 
+    ```prolog
+    quitar_elemento([], _, []).
+    quitar_elemento([X | XS], X, L) :- quitar_elemento(XS, X, L).
+    quitar_elemento([X | XS], Y, [X | L]) :- X \= Y, quitar_elemento(XS, Y, L).
+
+    % Caso base
+    intersección([], _, []).
+
+    % Caso 1: H pertenece a L2 -> Se incluye H en L3 y se remueven sus repeticiones en T
+    intersección([H | T], L2, [H | L3]) :-
+        member(H, L2),
+        quitar_elemento(T, H, T_sin_H),
+        intersección(T_sin_H, L2, L3).
+
+    % Caso 2: H no pertenece a L2 -> Se descarta H
+    intersección([H | T], L2, L3) :-
+        not(member(H, L2)),
+        intersección(T, L2, L3).
+    ```
+
+#### `partir(N, L, L1, L2)`, donde `L1` tiene los `N` primeros elementos de `L`, y `L2` el resto. Si `L` tiene menos de `N` elementos el predicado debe fallar. ¿Cuán reversible es este predicado? Es decir, ¿qué parámetros pueden estar indefinidos al momento de la invocación?
+
+- 
+    ```prolog
+    %! partir(N, L, L1, L2)
+    partir(0, L, [], L).
+    partir(suc(N), [H | T], [H | L1], L2) :- partir(N, T, L1, L2).
+    ```
+
+    - Ejemplo:
+        ```
+        ?- partir(N, [a,b,c], L1, L2).
+        N = 0,
+        L1 = [],
+        L2 = [a, b, c] ;
+        N = suc(0),
+        L1 = [a],
+        L2 = [b, c] ;
+        N = suc(suc(0)),
+        L1 = [a, b],
+        L2 = [c] ;
+        N = suc(suc(suc(0))),
+        L1 = [a, b, c],
+        L2 = [] ;
+        false.
+        ```
+
+    - Los parámetros que pueden estar indefinidos al momento de la invocación dependen de que exista **al menos una estructura finita instanciada** que acote el árbol de búsqueda (`L`, `L1` o `N`):  
 
 
+        - **Con `L` instanciada (`+L`):** Los parámetros `N`, `L1` y `L2` pueden estar indefinidos (`-` o `?`).
+            ```prolog
+            ?- partir(N, [a,b,c], L1, L2).
+            N = 0, L1 = [], L2 = [a, b, c] ;
+            N = suc(0), L1 = [a], L2 = [b, c] ;
+            N = suc(suc(0)), L1 = [a, b], L2 = [c] ;
+            N = suc(suc(suc(0))), L1 = [a, b, c], L2 = [] ;
+            false.
+            ```
+            - Esto se da ya que la estructura finita de `L` acota inductivamente las llamadas recursivas: en cada paso se consume la cabeza de la lista hasta llegar al caso base `[]`, garantizando terminación finita.
+
+        - **Con `L1` instanciada (`+L1`) o `N` instanciado (`+N`):** La lista `L` sí puede estar indefinida (`-L`).
+            ```prolog
+            ?- partir(suc(0), L, L1, L2).
+            L = [_A|L2],
+            L1 = [_A].
+            ```
+
+            ```prolog
+            ?- partir(N, L, [a, b], L2).
+            N = suc(suc(0)),
+            L = [a, b|L2].
+            ```
+
+        - **Con `L`, `L1` y `N` simultáneamente indefinidos:** La lista `L` no puede estar indefinida si no hay otra estructura que la limite (`L1` o `N`), ya que tendría infinitas soluciones. La segunda cláusula de `partir` continuaría unificando infinitamente `[H|T]`, generando prefijos `L1` y listas `L` de longitud incremental no acotada.
 
 #### ii) `borrar(+ListaOriginal, +X, -ListaSinXs)`, que elimina todas las ocurrencias de `X` de la lista `ListaOriginal`.
 
+- 
+    ```prolog
+    borrar([], _, []).
+    borrar([X | XS], X, L) :- borrar(XS, X, L).
+    borrar([X | XS], Y, [X | L]) :- X \= Y, borrar(XS, Y, L).
+    ```
+
 #### iii) `sacarDuplicados(+L1, -L2)`, que saca todos los elementos duplicados de la lista `L1`.
+
+- 
+    ```prolog
+    %! sacarDuplicados(+L1, -L2)
+    % Caso base
+    sacarDuplicados([], []).
+    % Caso X es duplicado, queda sólo la 1ra aparición de X
+    sacarDuplicados([X | XS], [X | L]) :-
+        member(X, XS),
+        borrar(XS, X, XS_sin_X),
+        sacarDuplicados(XS_sin_X, L).
+    % Caso X no es duplicado
+    sacarDuplicados([X | XS], [X | L]) :-
+        not(member(X, XS)),
+        sacarDuplicados(XS, L).
+    ```
 
 #### iv) `permutación(+L1, ?L2)`, que tiene éxito cuando `L2` es permutación de `L1`. ¿Hay una manera más eficiente de definir este predicado para cuando `L2` está instanciada?
 
+- Al evaluar `select(Y, L1, L1_sin_Y)` sobre `L1` instanciada, la cantidad de alternativas en cada paso está acotada exactamente por la longitud de `L1`, evitando ramas infinitas. Si hicieramos al reves con la recursión sobre `L1` (`[X|XS]`) en vez de sobre `L2`, la eliminación de elemento con `select(X, L2, L2_sin_X)` tendría infinitas soluciones ya que `L2` no está instanciada.
+    ```prolog
+    %! permutación(+L1, ?L2)
+    permutación([], []).
+    permutación(L1, [Y | YS]) :-
+        select(Y, L1, L1_sin_Y), % quita 1 aparición de Y sobre L1
+        permutación(L1_sin_Y, YS).
+    ```
+
+- Para que séa más eficiente, si pedimos ambas listas instanciadas, este algoritmo tiene complejidad `O(n log n)`, mientras que el otro tiene complejidad cuadrática.
+    ```prolog
+    %! permutación2(+L1, +L2)
+    % más eficiente para L2 instanciada
+    permutación2(L1, L2) :-
+        msort(L1, L1_sorted),
+        msort(L2, L2_sorted),
+        L1_sorted = L2_sorted.
+    ```
+
 #### v) `reparto(+L, +N, -LListas)` que tenga éxito si `LListas` es una lista de `N` listas (`N ≥ 1`) de cualquier longitud - incluso vacías - tales que al concatenarlas se obtiene la lista `L`.
 
+- 
+    ```prolog
+    %! reparto(+L, +N, -LListas)
+    reparto([], 0, []).
+    reparto(L, suc(M), [X | LListas]) :- 
+        append(X, L2, L),
+        reparto(L2, M, LListas).
+    ```
+
+- Ejemplo:
+    ```
+    ?- reparto([1,2], suc(0), LListas).
+    LListas = [[1, 2]] ;
+    false.
+
+    ?- reparto([1,2], suc(suc(0)), LListas).
+    LListas = [[], [1, 2]] ;
+    LListas = [[1], [2]] ;
+    LListas = [[1, 2], []] ;
+    false.
+
+    ?- reparto([1,2], suc(suc(suc(0))), LListas).
+    LListas = [[], [], [1, 2]] ;
+    LListas = [[], [1], [2]] ;
+    LListas = [[], [1, 2], []] ;
+    LListas = [[1], [], [2]] ;
+    LListas = [[1], [2], []] ;
+    LListas = [[1, 2], [], []] ;
+    false.
+    ```
+
 #### vi) `repartoSinVacías(+L, -LListas)` similar al anterior, pero ninguna de las listas de `LListas` puede ser vacía, y la longitud de `LListas` puede variar.
+
+- 
+    ```prolog
+    ```
+
