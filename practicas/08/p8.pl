@@ -243,5 +243,73 @@ coprimos(X, Y) :-
 
 % Ejercicio 14 ---------------------------------------
 
-% cuadradoSemiMágico(+N, -XS)
+% i) ---
 
+% filaLargoNQueSumaS(N, S, F)
+filaLargoNQueSumaS(0, 0, []).
+filaLargoNQueSumaS(N, S, [H | T]) :-
+    N > 0,
+    between(0, S, H),
+    S_resto is S-H,
+    N_resto is N-1,
+    filaLargoNQueSumaS(N_resto, S_resto, T).
+
+% rectanguloSemiMagico(+N, +M, +S, -R)
+rectanguloSemiMagico(_, 0, _, []).
+rectanguloSemiMagico(N, M, S, [F | FS]) :-
+    M > 0,
+    filaLargoNQueSumaS(N, S, F),
+    M_resto is M-1,
+    rectanguloSemiMagico(N, M_resto, S, FS).
+
+% cuadradoSemiMágico(+N, -XS)
+cuadradoSemiMágico(0, []).
+cuadradoSemiMágico(N, XS) :-
+    N > 0,
+    desde(0, S),
+    rectanguloSemiMagico(N, N, S, XS).
+
+% ii) ---
+
+% Tengo que readaptar la solucion anterior para que use Gen & Test.
+% No me sirve el filaLargoNQueSumaS actual ya que las genera segun restricciones.
+% lo que hago es generar filas de largo N. Pero como son infinitas, genero 
+% todas las posibles donde el máximo número es S. Asi da un subconjunto acotado
+
+% filaLargoN(+N, +S, -L)
+filaLargoN(0, _, []).
+filaLargoN(N, S, [H | T]) :-
+    N > 0,
+    between(0, S, H),
+    M is N-1,
+    filaLargoN(M, S, T).
+
+% Mismo concepto pero formando rectangulos
+
+% rectangulo(+N, +M, +S, -R)
+rectangulo(_, 0, _, []).
+rectangulo(N, M, S, [F | FS]) :-
+    M > 0,
+    filaLargoN(N, S, F),
+    M_resto is M-1,
+    rectangulo(N, M_resto, S, FS).
+
+% cuadradoMagico(+N, -XS)
+cuadradoMagico(N, XS) :-
+    desde(0, S), rectangulo(N, N, S, XS), % <-- GENERATE
+    esMagico(XS, S). % <-- TEST: las filas ya suman S, queda chequear columnas
+
+% esMagico(+Matriz, +S)
+esMagico([], _).
+esMagico([[] | _], _).
+esMagico(Matriz, S) :-
+    extraerColumna(Matriz, Columna, SubMatriz),
+    sum_list(Columna, S),
+    esMagico(SubMatriz, S).
+
+% extraerColumna(+Matriz, -Columna, -SubMatriz)
+extraerColumna([], [], []).
+extraerColumna([[X | Xs] | Filas], [X | Col], [Xs | RestoFilas]) :-
+    extraerColumna(Filas, Col, RestoFilas).
+% extraerColumna([[1, 2, 3], [4, 5, 6], [7, 8, 9]], Col, SubMatriz)
+% Col = [1, 4, 7], SubMatriz = [[2, 3], [5, 6], [8, 9]]
