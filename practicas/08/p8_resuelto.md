@@ -248,6 +248,8 @@ menorOIgual(X,X) :- natural(X).
     ````
 ---
 
+## Operaciones sobre listas
+
 ### Ejercicio 4
 
 Definir el predicado `juntar(?Lista1, ?Lista2, ?Lista3)`, que tiene éxito si `Lista3` es la concatenación de `Lista1` y `Lista2`. Por ejemplo:
@@ -527,3 +529,151 @@ Definir los siguientes predicados, usando `member` y/o `append` según sea conve
     ```prolog
     ```
 
+---
+
+## Instanciación y Reversibilidad
+
+### Ejercicio 9
+
+Considerar el siguiente predicado:
+```prolog
+desde(X,X).
+desde(X,Y) :- N is X+1, desde(N,Y).
+```
+
+#### i. ¿Cómo deben instanciarse los parámetros para que el predicado funcione? (Es decir, para que no se cuelgue ni produzca un error). ¿Por qué?
+
+- `-X`: No funciona, ya que el primer goal es `N is X+1` que no se puede evaluar si `X` no está instanciada, ya que se le está aplicando un operador artimético sin saber qué es. Sólo unificaría la primera cláusula.
+
+    ```
+    ?- desde(X, 2).
+    X = 2 ;
+    ERROR: Arguments are not sufficiently instantiated
+    ``` 
+
+- `?X`: No funciona por el mismo motivo, si no está instanciada da error.
+
+- `+X`: Funciona bien con `X`instanciada ya que su único uso es el de sumarle 1 para tomar ese valor como `N`. Veamos en este caso cómo tiene que instanciarse `Y`:
+    - `-Y`: Funciona bien, ya que unifica con el caso base `desde(N, Y), con N:=X'+1, Y:=X'`, entonces se obtiene `Y: N ≡ X+1`. Y continúa ejecutándose para todo `Y` mayor que `X`.
+    - `+Y`: Si está instanciada y `Y=X`, unifica con la primera cláusula y luego pasa a la segunda. Si no, pasa directo a la segunda. Va a sumarle 1 a `X` hasta que cumpla el caso `X=Y`, y será `true`, (ejemplo: `desde(1,3) → desde(2,3) → desde(3,3)`) el problema es que luego seguirá incrementando `X` hasta el infinito y no volverá a encontrar otro `Y=X` que cumpla. Luego, el programa se cuelga. Y si el `Y` instanciado es menor que `X`, nunca unificará con la primera cláusula y se colgará directamente.
+    - `?Y`: no cumple debido a que no puede estar instanciada.
+        ```
+        ?- desde(1, 5).
+        true ;
+        ^CAction (h for help) ? abort
+        % Execution Aborted
+
+        ?- desde(6, 5).
+        ^CAction (h for help) ? abort
+        % Execution Aborted
+        ```
+
+
+#### ii. Dar una nueva versión del predicado que funcione con la instanciación `desdeReversible(+X,?Y)`, tal que si Y está instanciada, sea verdadero si Y es mayor o igual que X, y si no lo está genere todos los Y de X en adelante.
+
+- 
+    ```prolog
+    % desdeReversible(+X, ?Y)
+    desdeReversible(X,Y) :-
+        % si Y variable, entonces funciona desde
+        var(Y),
+        desde(X,Y). 
+    desdeReversible(X,Y) :-
+        % si Y instanciada, chequeo que sea mayor o igual
+        nonvar(Y),
+        Y >= X. 
+    ```
+
+---
+
+### Ejercicio 11
+
+Un árbol binario se representará en Prolog con:
+- `nil`, si es vacío.
+- `bin(izq, v, der)`, donde `v` es el valor del nodo, `izq` es el subárbol izquierdo y `der` es el subárbol derecho.  
+
+#### Definir predicados en Prolog para las siguientes operaciones: `vacío`, `raiz`, `altura` y `cantidadDeNodos`. Asumir siempre que el árbol está instanciado.  
+
+
+
+- 
+    ```prolog
+    % vacio(+AB)
+    vacio(nil).
+    ```
+
+-  
+    ```prolog
+    % raiz(+AB, ?V)
+    raiz(bin(_, V, _), V).
+    ```
+
+- 
+    ```prolog
+    % raiz(+AB, ?V)
+    raiz(bin(_, V, _), V).
+    ```
+    - *Observación: No valdría hacer `% altura(bin(Izq, _, Der), 1+Sub_H_max) :-` ya que en Prolog la cabeza realiza unificación sintáctica pura, construyendo el término compuesto `+(1, Sub_H_max)` sin evaluar la suma:*
+      - *SÍ unifica con una variable libre con suma (`H = 1 + 0`) o con la misma estructura sintáctica (`1 + 0`).*
+      - *NO unifica con el número entero evaluado (`1`), haciendo fallar consultas como `?- altura(bin(nil,a,nil), 1).` dado que `1 \= 1 + 0`. Para evaluar numéricamente se requiere el uso explícito de `is/2`.*
+
+-  
+    ```prolog
+    % cantidadDeNodos(+AB, ?N)
+    cantidadDeNodos(nil, 0).
+    cantidadDeNodos(bin(Izq, _, Der), N) :-
+        cantidadDeNodos(Izq, N_Izq),
+        cantidadDeNodos(Der, N_Der),
+        N is 1 + N_Izq + N_Der.
+    ```
+
+---
+
+## Generate & Test
+
+### Ejercicio 13
+
+#### Definir el predicado `coprimos(-X,-Y)`, que genere uno a uno todos los pares de números naturales coprimos (es decir, cuyo máximo común divisor es 1), sin repetir resultados. Usar la función gcd del motor aritmético.
+
+- 
+    ```prolog
+    coprimos(X, Y) :-
+        desde(1,N), between(1,N,X), Y is N-X,  % <-- GENERATE
+        gcd(X, Y) =:= 1.                       % <-- TEST
+    ```
+
+Explicación:  
+- Generación (`desde(1, N), between(1, N, X), Y is N - X`): Instancia secuencialmente los pares de variables `X` e `Y` recorriendo el espacio cartesiano $\mathbb{N} \times \mathbb{N}$ mediante diagonales de suma constante (`N = X + Y`). Para cada entero `N` producido por `desde/2`, el predicado `between/3` genera las alternativas finitas para `X` y determina `Y is N - X`.
+- Testeo (`gcd(X, Y) =:= 1`): Filtra los pares candidatos `(X, Y)` ya instanciados, evaluando la condición de coprimicidad mediante la función extra-lógica `gcd`.  
+
+Por qué no sirve `desde(1, X), desde(1, Y), gcd(X, Y) =:= 1.`:
+- Si usamos ese goal, `desde(1, Y)` produce infinitas soluciones por *backtracking* sin fallar finitamente, dejando a `X` fijado en `1` e impidiendo que la búsqueda (DFS) retroceda hacia `desde(1, X)`.
+
+---
+
+### Ejercicio 14
+
+Un cuadrado semi-mágico es una matriz cuadrada de naturales (incluido el cero) donde todas las filas de la matriz suman lo mismo. Por ejemplo:
+```
+1 3 0
+2 2 0
+1 1 2
+```
+donde todas las filas suman 4.  
+Representamos la matriz como una lista de filas, donde cada fila es una lista de naturales. El ejemplo anterior se representaría de la siguiente manera: [[1,3,0],[2,2,0],[1,1,2]].
+#### i. Definir el predicado `cuadradoSemiMágico(+N, -XS)`. El predicado debe ir devolviendo matrices (utilizando la representación antes mencionada), que sean cuadrados semi-mágicos de dimensión `N*N`. Dichas matrices deben devolverse de manera ordenada: primero aquellas cuyas filas suman 0, luego 1, luego 2, etc. No es necesario utilizar la técnica Generate & Test.  
+Ejemplo:
+```
+cuadradoSemiMágico(2,X). →
+X = [[0, 0], [0, 0]] ;
+X = [[0, 1], [0, 1]] ;
+X = [[0, 1], [1, 0]] ;
+X = [[1, 0], [0, 1]] ;
+X = [[1, 0], [1, 0]] ;
+X = [[0, 2], [0, 2]] ;
+```
+etc.
+
+
+
+#### ii. Definir utilizando Generate & Test el predicado cuadradoMagico(+N, -XS), que instancia XS con cuadrados cuyas filas y columnas suman todas un mismo valor.

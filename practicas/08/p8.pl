@@ -192,3 +192,56 @@ repartoSinVacias(L, [X | LListas]) :-
     is_list(L_resto),
     X \= [],
     repartoSinVacias(L_resto, LListas).*/
+
+
+% Ejercicio 9 ---------------------------------------
+
+% desde(+X, -Y)
+desde(X,X).
+desde(X,Y) :- N is X+1, desde(N,Y).
+
+% desdeReversible(+X, ?Y)
+desdeReversible(X,Y) :-
+    % si Y variable, entonces funciona desde
+    var(Y),
+    desde(X,Y). 
+desdeReversible(X,Y) :-
+    % si Y instanciada, chequeo que sea mayor o igual
+    nonvar(Y),
+    Y >= X. 
+
+
+% Ejercicio 11 ---------------------------------------
+
+% vacio(+AB)
+vacio(nil).
+
+% raiz(+AB, ?V)
+raiz(bin(_, V, _), V).
+
+% altura(+AB, ?H)
+altura(nil, 0).
+altura(bin(Izq, _, Der), H) :-
+    altura(Izq, H_Izq),
+    altura(Der, H_Der),
+    Sub_H_max is max(H_Izq, H_Der),
+    H is 1+Sub_H_max.
+
+% cantidadDeNodos(+AB, ?N)
+cantidadDeNodos(nil, 0).
+cantidadDeNodos(bin(Izq, _, Der), N) :-
+    cantidadDeNodos(Izq, N_Izq),
+    cantidadDeNodos(Der, N_Der),
+    N is 1 + N_Izq + N_Der.
+
+
+% Ejercicio 13 ---------------------------------------
+
+coprimos(X, Y) :-
+    % desde(1, X), desde(1, Y), gcd(X, Y) =:= 1.
+    desde(1, N), between(1, N, X), Y is N-X, gcd(X, Y) =:= 1.
+
+% Ejercicio 14 ---------------------------------------
+
+% cuadradoSemiMágico(+N, -XS)
+
