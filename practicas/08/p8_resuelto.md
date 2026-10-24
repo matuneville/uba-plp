@@ -674,6 +674,33 @@ X = [[0, 2], [0, 2]] ;
 etc.
 ```
 
+-  
+    ```prolog
+    % filaLargoNQueSumaS(N, S, F)
+    filaLargoNQueSumaS(0, 0, []).
+    filaLargoNQueSumaS(N, S, [H | T]) :-
+        N > 0,
+        between(0, S, H),
+        S_resto is S-H,
+        N_resto is N-1,
+        filaLargoNQueSumaS(N_resto, S_resto, T).
+
+    % rectanguloSemiMagico(+N, +M, +S, -R)
+    rectanguloSemiMagico(_, 0, _, []).
+    rectanguloSemiMagico(N, M, S, [F | FS]) :-
+        M > 0,
+        filaLargoNQueSumaS(N, S, F),
+        M_resto is M-1,
+        rectanguloSemiMagico(N, M_resto, S, FS).
+
+    % cuadradoSemiMágico(+N, -XS)
+    cuadradoSemiMágico(0, []).
+    cuadradoSemiMágico(N, XS) :-
+        N > 0,
+        desde(0, S),
+        rectanguloSemiMagico(N, N, S, XS).
+    ```
+
 
 
 #### ii. Definir utilizando Generate & Test el predicado cuadradoMagico(+N, -XS), que instancia XS con cuadrados cuyas filas y columnas suman todas un mismo valor.
