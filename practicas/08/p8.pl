@@ -313,3 +313,108 @@ extraerColumna([[X | Xs] | Filas], [X | Col], [Xs | RestoFilas]) :-
     extraerColumna(Filas, Col, RestoFilas).
 % extraerColumna([[1, 2, 3], [4, 5, 6], [7, 8, 9]], Col, SubMatriz)
 % Col = [1, 4, 7], SubMatriz = [[2, 3], [5, 6], [8, 9]]
+
+
+% Ejercicio 16 ---------------------------------------
+
+frutal(frutilla).
+frutal(banana).
+frutal(manzana).
+cremoso(banana).
+cremoso(americana).
+cremoso(frutilla).
+cremoso(dulceDeLeche).
+leGusta(X) :- frutal(X), cremoso(X).
+cucurucho(X,Y) :- leGusta(X), leGusta(Y).
+
+
+% Ejercicio 18 ---------------------------------------
+
+% corteMasParejo(+L, -L1, -L2)
+corteMasParejo(L, L1, L2) :-
+    corteConDif(L, L1, L2, Dif),
+    not((
+        corteConDif(L, _, _, Dif2),
+        Dif2 < Dif
+    )).
+    
+corteConDif(L, L1, L2, D) :-
+    append(L1, L2, L),
+    sumlist(L1, S1),
+    sumlist(L2, S2),
+    D is abs(S2-S1).
+
+% Ejercicio 20 ---------------------------------------
+
+% primo(+N)
+primo(N) :- not((M is N-1, between(2, M, D), N mod D =:= 0)).
+
+% poderoso(+N)
+numeroPoderoso(N) :- not((
+    between(2, N, P),
+    primo(P),
+    N mod P =:= 0,
+    PP is P*P,
+    N mod PP =\= 0
+    )).
+
+% proximoNumeroPoderoso(+X,-Y)
+proximoNumeroPoderoso(X,P) :-
+    P is X+1,
+    numeroPoderoso(P).
+proximoNumeroPoderoso(X,Y) :-
+    Z is X+1,
+    not(numeroPoderoso(Z)),
+    proximoNumeroPoderoso(Z,Y).
+
+% Ejercicio 23 ---------------------------------------
+
+% i) ---
+
+% arbol(-A)
+arbol(A) :- desde(0, N), arbolNNodos(N, A).
+
+% arbolNNodos(+N, -A)
+arbolNNodos(0, nil).
+arbolNNodos(N, bin(AI, _, AD)) :-
+    N > 0,
+    M is N-1,
+    between(0, M, NI),
+    ND is N-1-NI,
+    arbolNNodos(NI, AI),
+    arbolNNodos(ND, AD).
+
+% ii) ---
+
+% nodosEn(?A, +L)
+nodosEn(nil, _).
+nodosEn(bin(AI, V, AD), L) :-
+    member(V, L),
+    nodosEn(AI, L),
+    nodosEn(AD, L).
+
+% iii) ---
+
+% sinRepEn(-A, +L)
+sinRepEn(A, L) :-
+    % GENERATE
+    length(L, MaxN),        % cant. de nodos acotada por cant. de elemenos de L
+    between(0, MaxN, N),    % para cada posible cantidad de nodos distintos:
+    arbolNNodos(N, A),      % genero todos los posibles árboles, con nodos vacios
+    nodosEn(A, L),          % le seteo como nodos los elementos de L, incluyendo repetidos
+    % TEST
+    nodos(A, ListaNodos),   % obtengo los nodos del arbol y
+    sinReps(ListaNodos).    % filtro los arboles sin nodos repetidos 
+
+% nodos(+A, -L)
+nodos(nil, []).
+nodos(bin(AI, V, AD), [V | L]) :-
+    nodos(AI, LI),
+    nodos(AD, LD),
+    append(LI, LD, L).
+
+% sinReps(+L)
+sinReps([]).
+sinReps([X | XS]) :-
+    not(member(X, XS)),
+    sinReps(XS).

@@ -750,3 +750,343 @@ etc.
     % extraerColumna([[1, 2, 3], [4, 5, 6], [7, 8, 9]], Col, SubMatriz)
     % Col = [1, 4, 7], SubMatriz = [[2, 3], [5, 6], [8, 9]]
     ```
+
+---
+
+## Negación por falla y Cut
+
+### Ejercicio 16
+
+A Ana le gustan los helados que sean a la vez cremosos y frutales. En una heladería de su barrio, se encontró con los siguientes sabores:
+
+```prolog
+frutal(frutilla).
+frutal(banana).
+frutal(manzana).
+cremoso(banana).
+cremoso(americana).
+cremoso(frutilla).
+cremoso(dulceDeLeche).
+```
+
+Ana desea comprar un cucurucho con sabores que le gustan. El cucurucho admite hasta 2 sabores. Los siguientes predicados definen las posibles maneras de armar el cucurucho.
+```prolog
+leGusta(X) :- frutal(X), cremoso(X).
+cucurucho(X,Y) :- leGusta(X), leGusta(Y).
+```
+
+#### i. Escribir el árbol de búsqueda para la consulta `?- cucurucho(X,Y).`
+
+```
+?- cucurucho(X,Y).
+    ?- leGusta(X), leGusta(Y). { X:=X, Y:=Y }
+        ?- leGusta(X). { X:=X }
+
+            ?- frutal(X), cremoso(X).
+                ?- frutal(X).
+                    { X:=frutilla } ✓
+                    ?- cremoso(frutilla)
+                        { X:=frutilla } ✓
+
+                        ?- leGusta(Y). {X':=Y}
+
+                            ?- frutal(Y), cremoso(Y).
+                                ?- frutal(Y).
+                                    { Y:=frutilla } ✓
+                                    ?- cremoso(frutilla)
+                                        { Y:=frutilla } ✓✓
+                                    { Y:=banana } ✓
+                                    ?- cremoso(banana)
+                                        { Y:=banana } ✓✓
+                                    { Y:=manzana } ✓
+                                    ?- cremoso(manzana)
+                                        ××
+                            { Y:=frutilla, banana }
+                        { X:= frutilla, Y:=frutilla }
+                        { X:= frutilla, Y:=banana }
+
+                    { X:=banana } ✓
+                    ?- cremoso(banana)
+                        { X:=banana } ✓
+
+                        ?- leGusta(Y). {X':=Y}
+                            ?- frutal(Y), cremoso(Y).
+                                ?- frutal(Y).
+                                    { Y:=frutilla } ✓
+                                    ?- cremoso(frutilla)
+                                        { Y:=frutilla } ✓✓
+                                    { Y:=banana } ✓
+                                    ?- cremoso(banana)
+                                        { Y:=banana } ✓✓
+                                    { Y:=manzana } ✓
+                                    ?- cremoso(manzana)
+                                        ××
+                            { Y:=frutilla, banana }
+                        { X:= banana, Y:=frutilla }
+                        { X:= banana, Y:=banana }
+                    
+                    { X:=manzana }
+                    ?- cremoso(manzana)
+                        ××
+                        % no continua con leGusta(Y).
+
+
+                    { X:=manzana } ✓
+                        ?- cremoso(manzana)
+                            ×
+
+        { X:= frutilla, Y:=frutilla }
+        { X:= frutilla, Y:=banana }
+        { X:= banana, Y:=frutilla }
+        { X:= banana, Y:=banana }
+```
+
+- Resultado de prolog:
+    ```
+    ?- cucurucho(X,Y).
+    X = Y, Y = frutilla ;
+    X = frutilla,
+    Y = banana ;
+    X = banana,
+    Y = frutilla ;
+    X = Y, Y = banana ;
+    false.
+    ```
+
+
+#### ii. Indicar qué partes del árbol se podan al colocar un ! en cada ubicación posible en las definiciones de cucurucho y leGusta.
+
+- 1. Caso `leGusta(X) :- frutal(X), !, cremoso(X).`  
+  - El `!` se evalúa inmediatamente después de unificar el primer valor de `frutal(X)` (`X = frutilla`). En ese punto se podan las ramas de elección de `frutal(X)` que aún no se exploraron (`X = banana` y `X = manzana`).
+
+    ```
+    ?- cucurucho(X, Y).
+        ?- leGusta(X), leGusta(Y).
+            ?- frutal(X), !, cremoso(X), leGusta(Y).
+                ?- frutal(X).
+                    { X := frutilla }
+                    ?- !, cremoso(frutilla), leGusta(Y).
+                        [SE EJECUTA EL !] -> Poda las alternativas pendientes de frutal(X) (banana y manzana)
+                        ?- cremoso(frutilla), leGusta(Y).
+                            ?- cremoso(frutilla).
+                                ✓
+                                ?- leGusta(Y).
+                                    ?- frutal(Y), !, cremoso(Y).
+                                        ?- frutal(Y).
+                                            { Y := frutilla }
+                                            ?- !, cremoso(frutilla).
+                                                [SE EJECUTA EL !] -> Poda las alternativas pendientes de frutal(Y) (banana y manzana)
+                                                ?- cremoso(frutilla).
+                                                    ✓✓
+                                                    ÉXITO: { X := frutilla, Y := frutilla }
+
+                                            { Y := banana }  ✂️ [PODADO POR EL ! DE leGusta(Y)]
+                                            { Y := manzana } ✂️ [PODADO POR EL ! DE leGusta(Y)]
+
+                    { X := banana }  ✂️ [PODADO POR EL ! DE leGusta(X)]
+                    { X := manzana } ✂️ [PODADO POR EL ! DE leGusta(X)]
+    ```
+
+- 2. Caso `cucurucho(X, Y) :- leGusta(X), !, leGusta(Y).`
+  - El `!` se encuentra en la regla principal entre las dos llamadas a `leGusta`. Se ejecuta una vez resuelto por completo el subobjetivo `leGusta(X)` con su primer valor exitoso (`X = frutilla`). En ese momento, se podan las alternativas para `leGusta(X)`, pero `leGusta(Y)` (que está a la derecha del `!`) explora todas sus posibilidades.
+
+    ```
+    ?- cucurucho(X, Y).
+        ?- leGusta(X), !, leGusta(Y).
+            ?- frutal(X), cremoso(X), !, leGusta(Y).
+                ?- frutal(X).
+                    { X := frutilla }
+                    ?- cremoso(frutilla), !, leGusta(Y).
+                        ?- cremoso(frutilla).
+                            ✓
+                            ?- !, leGusta(Y).
+                                [SE EJECUTA EL !] -> Poda el backtracking sobre leGusta(X) (X = banana)
+                                ?- leGusta(Y).
+                                    ?- frutal(Y), cremoso(Y).
+                                        ?- frutal(Y).
+                                            { Y := frutilla }
+                                            ?- cremoso(frutilla).
+                                                ✓✓
+                                                ÉXITO: { X := frutilla, Y := frutilla }
+
+                                            { Y := banana }
+                                            ?- cremoso(banana).
+                                                ✓✓
+                                                ÉXITO: { X := frutilla, Y := banana }
+
+                                            { Y := manzana }
+                                            ?- cremoso(manzana).
+                                                ×
+
+                    { X := banana }  ✂️ [PODADO POR EL ! DE cucurucho(X,Y)]
+                    { X := manzana } ✂️ [PODADO POR EL ! DE cucurucho(X,Y)]
+    ```
+
+---
+
+### Ejercicio 18
+
+#### Definir el predicado `corteMásParejo(+L,-L1,-L2)` que, dada una lista de números, realiza el corte más parejo posible con respecto a la suma de sus elementos (puede haber más de un resultado). Por ejemplo:
+
+```prolog
+?- corteMásParejo([1,2,3,4,2],L1,L2).
+    → L1 = [1, 2, 3], L2 = [4, 2] ; false.
+?- corteMásParejo([1,2,1],L1,L2).
+    → L1 = [1], L2 = [2, 1] ; L1 = [1, 2], L2 = [1] ; false.
+```
+
+- Solución:
+
+    ```prolog
+    % corteMasParejo(+L, -L1, -L2, -D)
+    corteMasParejo(L, L1, L2, Dif) :-
+        corteConDif(L, L1, L2, Dif),
+        not((
+            corteConDif(L, _, _, Dif2),
+            Dif2 < Dif
+        )).
+        
+    corteConDif(L, L1, L2, D) :-
+        append(L1, L2, L),
+        sumlist(L1, S1),
+        sumlist(L2, S2),
+        D is abs(S2-S1).
+    ```
+
+---
+
+### Ejercicio 20
+
+Un número poderoso es un número natural `m` tal que por cada número primo `p` que divide a `m`, `p^2` también divide a `m`.
+
+#### Definir el predicado `próximoNumPoderoso(+X,-Y)` que instancie en `Y` el siguiente número poderoso a partir de `X`. Por ejemplo:
+
+```
+?- próximoNumPoderoso(20,Y).
+Y = 25;
+false.
+?- próximoNumPoderoso(8,Y).
+Y = 9;
+false.
+```
+
+*Notar que, como en el último caso, si `X` ya es un número poderoso, `Y` no debe instanciarse con el valor de `X`, sino con el siguiente número poderoso.*  
+
+-  
+    ```prolog
+    % primo(+N)
+    primo(N) :- not((M is N-1, between(2, M, D), N mod D =:= 0)).
+
+    % poderoso(+N)
+    numeroPoderoso(N) :- not((
+        between(2, N, P),
+        primo(P),
+        N mod P =:= 0,
+        PP is P*P,
+        N mod PP =\= 0
+        )).
+
+    % proximoNumeroPoderoso(+X,-Y)
+    proximoNumeroPoderoso(X,P) :-
+        P is X+1,
+        numeroPoderoso(P).
+    proximoNumeroPoderoso(X,Y) :-
+        Z is X+1,
+        not(numeroPoderoso(Z)),
+        proximoNumeroPoderoso(Z,Y).
+    ```
+
+
+---
+
+## Ejercicios integradores
+
+### Ejercicio 23
+Trabajaremos con árboles binarios, usando `nil` y `bin(AI, V, AD)` para representarlos en Prolog.  
+
+#### i. Implementar un predicado `arbol(-A)` que genere estructuras de árbol binario, dejando los valores de los nodos sin instanciar. Deben devolverse todos los árboles posibles (es decir, para toda estructura posible, el predicado debe devolverla luego de un número finito de pedidos). No debe devolverse dos veces el mismo árbol.
+
+```
+? arbol(A).
+A = nil ;
+A = bin(nil, _G2388, nil) ;
+A = bin(nil, _G2391, bin(nil, _G2398, nil)) ;
+A = bin(bin(nil, _G2398, nil), _G2391, nil) ;
+...
+```
+
+-  
+    ```prolog
+    % arbol(-A)
+    arbol(A) :- desde(0, N), arbolNNodos(N, A).
+
+    % arbolNNodos(+N, -A)
+    arbolNNodos(0, nil).
+    arbolNNodos(N, bin(AI, _, AD)) :-
+        N > 0,
+        M is N-1,
+        between(0, M, NI),
+        ND is N-1-NI,
+        arbolNNodos(NI, AI),
+        arbolNNodos(ND, AD).
+    ```
+    
+ii. Implementar un predicado `nodosEn(?A, +L)` que es verdadero cuando `A` es un árbol cuyos nodos pertenecen al conjunto conjunto de átomos `L` (representado mediante una lista no vacía, sin orden relevante y sin repetidos). Puede asumirse que el árbol se recibe instanciado en su estructura, pero no necesariamente en sus nodos.
+
+```
+? arbol(A), nodosEn(A, [ka, pow]).
+A = nil ;
+A = bin(nil, ka, nil) ;
+A = bin(nil, pow, nil) ;
+A = bin(nil, ka, bin(nil, ka, nil)) ;
+A = bin(nil, ka, bin(nil, pow, nil)) ;
+...
+```
+
+-  
+    ```prolog
+    % nodosEn(?A, +L)
+    nodosEn(nil, L).
+    nodosEn(bin(AI, V, AD), L) :-
+        member(V, L),
+        nodosEn(AI, L),
+        nodosEn(AD, L).
+    ```
+
+iii. Implementar un predicado `sinRepEn(-A, +L)` que genere todos los árboles cuyos nodos pertenezcan al alfabeto `L` y usando como máximo una vez cada símbolo del mismo. En este caso, no hay infinitos árboles posibles; es importante que el predicado no devuelva soluciones repetidas y que no se quede buscando indefinidamente una vez terminado el espacio de soluciones.
+
+```
+? arbolSinRepEn(A, [ka, pow]).
+A = nil ;
+A = bin(nil, ka, nil) ; ...
+A = bin(nil, ka, bin(nil, pow, nil)) ;
+... ;
+No.
+```
+
+-  
+    ```prolog
+    % sinRepEn(-A, +L)
+    sinRepEn(A, L) :-
+        % GENERATE
+        length(L, MaxN),        % cant. de nodos acotada por cant. de elemenos de L
+        between(0, MaxN, N),    % para cada posible cantidad de nodos distintos:
+        arbolNNodos(N, A),      % genero todos los posibles árboles, con nodos vacios
+        nodosEn(A, L),          % le seteo como nodos los elementos de L, incluyendo repetidos
+        % TEST
+        nodos(A, ListaNodos),   % obtengo los nodos del arbol y
+        sinReps(ListaNodos).    % filtro los arboles sin nodos repetidos 
+
+    % nodos(+A, -L)
+    nodos(nil, []).
+    nodos(bin(AI, V, AD), [V | L]) :-
+        nodos(AI, LI),
+        nodos(AD, LD),
+        append(LI, LD, L).
+
+    % sinReps(+L)
+    sinReps([]).
+    sinReps([X | XS]) :-
+        not(member(X, XS)),
+        sinReps(XS).
+    ```
